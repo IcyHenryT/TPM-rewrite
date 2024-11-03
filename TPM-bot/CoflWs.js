@@ -28,7 +28,7 @@ class CoflWs {
     startWs(link = null) {
 
         if (link === null) {
-            link = `wss://sky.coflnet.com/modsocket?version=1.5.1-af&player=${this.ign}&SId=${session}`;
+            link = `wss://sky.coflnet.com/modsocket?version=1.5.6-af&player=${this.ign}&SId=${session}`;
             this.link = link;
         }//There's no option to use regular socket because it's slower. 
 
@@ -100,7 +100,7 @@ class CoflWs {
                     if (data.includes('/cofl connect')) {//switch region stuff
                         this.closeSocket();
                         setTimeout(() => {
-                            this.startWs(`${data.split(' ')[2]}?version=1.5.1-af&player=${this.ign}&SId=${session}`);
+                            this.startWs(`${data.split(' ')[2]}?version=1.5.6-af&player=${this.ign}&SId=${session}`);
                         }, 5000);
                         break;
                     } else {
