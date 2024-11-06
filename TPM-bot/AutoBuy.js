@@ -1,6 +1,6 @@
 const { getPackets } = require('./packets.js');
 const { config } = require('../config.js');
-const { stripItemName, IHATETAXES, normalizeDate, getWindowName, isSkin, sleep, normalNumber, getSlotLore, sendDiscord, noColorCodes } = require('./Utils.js');
+const { stripItemName, IHATETAXES, normalizeDate, getWindowName, isSkin, sleep, normalNumber, getSlotLore, sendDiscord, noColorCodes, betterOnce} = require('./Utils.js');
 const { logmc, debug, removeIgn, error } = require('../logger.js');
 let { delay, waittime, skip: skipSettings, clickDelay, bedSpam, delayBetweenClicks, angryCoopPrevention: coop } = config;
 let { always: useSkip, minProfit: skipMinProfit, userFinder: skipUser, skins: skipSkins } = skipSettings;
@@ -208,7 +208,7 @@ class AutoBuy {
             const windowCheck = !bot.currentWindow;
             const ready = windowCheck && lastUpdated && stateCheck;
             let auctionID = data.id;
-            if (ready) packets.sendMessage(`/viewauction ${auctionID}`);//Put this earlier so that it doesn't get slowed down (but it's kinda ugly :( )
+            if (ready) packets.sendMessage(`/viewauction ${auctionID}`); this.windowResponse(Date.now())//Put this earlier so that it doesn't get slowed down (but it's kinda ugly :( )
             const { finder, purchaseAt, target, startingBid, tag, itemName } = data;//I hate this :(
             let weirdItemName = stripItemName(itemName);
             let profit = IHATETAXES(target) - startingBid;
@@ -299,6 +299,7 @@ class AutoBuy {
         for (let i = 0; i < 5; i++) {
             if (getWindowName(this.bot.currentWindow)?.includes('BIN Auction View') && this.currentOpen === currentID) {
                 this.bot.betterClick(31, 0, 0);
+                this.binClickResponse(Date.now())
                 debug(`Clicking ${currentID} bed`);
                 await sleep(delayBetweenClicks);
             } else {
@@ -338,6 +339,7 @@ class AutoBuy {
             }
             if (item == "gold_nugget") {//idk man sometimes it happens
                 this.bot.betterClick(31, 0, 0);
+                this.binClickResponse(Date.now())
                 undefinedCount++
                 return;
             }
@@ -347,6 +349,7 @@ class AutoBuy {
                 return;
             };
             this.bot.betterClick(31, 0, 0);
+            this.binClickResponse(Date.now())
         }, clickDelay)
     }
 
@@ -414,6 +417,19 @@ class AutoBuy {
             }
         }, delay)
     }
+
+    async windowResponse(callTime){
+        await betterOnce(this.bot._client, `open_window`);
+        logmc(`§6[§bTPM§6] §cResponse time from /ah to window was: ${Date.now() - callTime}`)
+    }
+    
+    async binClickResponse(callTime){
+        await betterOnce(this.bot._client, 'chat', msg => {
+            return msg.message == `{"italic":false,"extra":[{"color":"red","text":""},{"color":"red","text":"This BIN sale is still in its grace period!"}],"text":""}`
+        })
+        logmc(`§6[§bTPM§6] §cResponse time from click to grace: ${Date.now() - callTime}`)
+    }
+    
 
 }
 

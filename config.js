@@ -32,7 +32,7 @@ const defaultConfig = `{
     "delay": 250,
 
     //Delay for beds. Refer to https://discord.com/channels/1261825756615540836/1275546557508223048 for help
-    "waittime": 15,
+    "waittime": -10,
 
     //Set up different list price ranges and their corresponding percent off of target price. (The lower value of the range is inclusive, the higher value is exclusive)
     "percentOfTarget": ["0", "10b", 97],
@@ -54,7 +54,7 @@ const defaultConfig = `{
     "skip": {
 
         //skip on every flip
-        "always": false,
+        "always": true,
 
         //Skip on flips with a profit over x
         "minProfit": "25m",
