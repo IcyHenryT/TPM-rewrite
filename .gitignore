@@ -5,3 +5,8 @@ TPM-rewrite-win.exe
 *.exe
 testing
 /logs
+.gitignore
+node_modules
+package-lock.json
+package.json
+.package-lock.json

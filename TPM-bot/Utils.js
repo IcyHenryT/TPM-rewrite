@@ -1,5 +1,5 @@
 const { config } = require('../config.js');
-const { debug, error } = require('../logger.js');
+const { debug, error} = require('../logger.js');
 const { webhook } = config;
 const axios = require('axios');
 
@@ -23,22 +23,6 @@ function formatNumber(num) {
     return `${negative ? '-' : ''}${thingy}`;
 }
 
-async function betterOnce(listener, event, timeframe = 5000) {
-    return new Promise((resolve, reject) => {
-
-        const listen = (msg) => {
-            listener.off(event, listen);
-            resolve(msg);
-        };
-
-        setTimeout(() => {
-            listener.off(event, listen);
-            reject(`Didn't find in time!`);
-        }, timeframe);
-
-        listener.on(event, listen);
-    });
-}
 
 function stripItemName(name) {
     const noCodes = noColorCodes(name);
@@ -160,26 +144,23 @@ function nicerFinders(finder) {
     return finder;
 }
 
-async function betterOnce(listener, uhhh, timeframe = 5000) {
-    return new Promise((resolve) => {
-        let sent = false;
+async function betterOnce(listener, event, callback = false, timeframe = 5000) {
+    return new Promise((resolve, reject) => {
 
-        const listen = () => {
-            if (!sent) {
-                sent = true;
-                listener.off(uhhh, listen);
-                resolve(true);
+        const listen = (msg) => {
+            if (callback) {
+                if (!callback(msg)) return;
             }
+            listener.off(event, listen);
+            resolve(msg);
         };
 
         setTimeout(() => {
-            if (!sent) {
-                listener.off(uhhh, listen);
-                resolve(false);
-            }
+            listener.off(event, listen);
+            resolve(`Didn't find in time!`);
         }, timeframe);
 
-        listener.on(uhhh, listen);
+        listener.on(event, listen);
     });
 }
 

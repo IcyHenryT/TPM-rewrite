@@ -300,7 +300,7 @@ class MessageHandler {
                     return;
                 }
                 try {
-                    await betterOnce(this.bot, 'spawn', 30_000);
+                    await betterOnce(this.bot, 'spawn', null, 30_000);
                     await sleep(20_000);
                 } catch (e) {
                     console.error(e);
