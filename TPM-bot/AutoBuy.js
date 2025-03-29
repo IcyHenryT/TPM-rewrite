@@ -237,7 +237,7 @@ class AutoBuy {
             const windowCheck = !bot.currentWindow;
             const ready = windowCheck && lastUpdated && stateCheck;
             let auctionID = data.id;
-            if (ready) packets.sendMessage(`/viewauction ${auctionID}`);//Put this earlier so that it doesn't get slowed down (but it's kinda ugly :( )
+            if (ready) bot._client.chat(`/viewauction ${auctionID}`);//Put this earlier so that it doesn't get slowed down (but it's kinda ugly :( )
             const { finder, vol, purchaseAt, target, startingBid, tag, itemName, profitPerc } = data;//I hate this :(
             let weirdItemName = stripItemName(itemName);
             let profit = IHATETAXES(target) - startingBid;
@@ -333,7 +333,7 @@ class AutoBuy {
 
     //ok so the reason we have a fake price is so that I don't have to recode the whole price thing from queue yk yk
     openExternalFlip(ahid, profit, finder, itemname, tag, price = null, fakePrice = null) {//queue and buy from discord (maybe webpage in future?) ONLY CALL IF READY!!!
-        this.packets.sendMessage(`/viewauction ${ahid}`);
+        this.bot.chat(`/viewauction ${ahid}`);
         this.recentFinder = finder;
         this.recentProfit = profit;
         this.currentOpen = ahid;

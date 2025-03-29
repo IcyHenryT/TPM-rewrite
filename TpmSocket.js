@@ -378,7 +378,7 @@ class TpmSocket {
                     fields: [
                         {
                             name: '',
-                            value: message,
+                            value: `${message}`,
                         }
                     ],
                     thumbnail: {

@@ -492,7 +492,7 @@ class RelistHandler {
         if (!this.hasCookie) return false;
         if (!this.useRelist) {
             this.sendTPMSocket(auctionID, `relist is off`, itemName);
-            return false;
+            return 'remove';
         }
         let reasons = [];
         if (tags.includes(tag)) reasons.push(`${tag} is a blocked tag`);
