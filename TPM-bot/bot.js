@@ -90,7 +90,9 @@ async function makeBot(ign, safeIgn) {
             });
             debug(`Recent purse ${bot.recentPurse}. Current found ${pursey}. Recent: ${recent}`);
             if (recent) {
-                if (bot.recentPurse * .99 >= pursey || bot.recentPurse * 1.01 <= pursey) {
+                const inLowerBound = bot.recentPurse * .99 >= pursey;
+                const inUpperBound = bot.recentPurse * 1.01 <= pursey;
+                if (inLowerBound || inUpperBound) {
                     return bot.recentPurse;
                 }
             }

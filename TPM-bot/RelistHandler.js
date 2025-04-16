@@ -133,7 +133,7 @@ class RelistHandler {
                         if (endsInTime && BIN) {
                             const endTime = normalTime(endsInTime);
                             setTimeout(() => {//Remove auctions when they expire
-                                state.queueAdd(this.getItemUuid(slot), "expired", 4);
+                                state.queueAdd(this.getItemUuid(slot), "expired", 3);
                             }, endTime)
                         }
                         const hasSeller = lore.find(line => line.includes('Seller:'));
@@ -430,7 +430,7 @@ class RelistHandler {
             }), false)
 
             setTimeout(() => {
-                state.queueAdd(itemUuid, "expired", 4);
+                state.queueAdd(itemUuid, "expired", 3);
             }, listingTime * 3.6e+6)
 
         } catch (e) {
