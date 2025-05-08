@@ -10,6 +10,7 @@ const { blockUselessMessages, session } = config;
 
 const connectionRegex = /\[Coflnet\]:  Your connection id is ([a-f0-9]{32}), copy that if you encounter an error/;
 const startedRegex = /You have (.+?) until (.+?)$/
+const freeRegex = /You use the FREE version of the flip finder/;
 
 class CoflWs {
 
@@ -188,14 +189,18 @@ class CoflWs {
                 case "PREMIUM":
                     this.accountTier = "Premium";
                     break;
-                case "FREE":
-                    this.accountTier = "Free";
-                    break;
                 default:
                     this.accountTier = startMatch[1];
                     break;
             }
             this.accountEndTime = Math.round(new Date(startMatch[2]).getTime() / 1000);//convert to milliseconds!!!
+        }
+
+        const freeMatch = msg.match(freeRegex);
+        if (freeMatch) {
+            debug(`Got free tier`);
+            this.accountTier = "Free";
+            this.accountEndTime = Math.round(Date.now() * 100);
         }
 
         if (msg.includes(`Until you do you are using the free version which will make less profit and your settings won't be saved`)) {//logged out

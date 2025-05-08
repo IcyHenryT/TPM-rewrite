@@ -381,7 +381,7 @@ class RelistHandler {
 
             debug(relistpercent)
 
-            const listPrice = override ? price : this.roundNumber(relistpercent * price / 100, roundTo);
+            const listPrice = override ? Math.round(price) : this.roundNumber(relistpercent * price / 100, roundTo);
             if (listPrice < 500) {
                 throw new Error(`Most likely incorrect listing price ${listPrice}`);
             }
