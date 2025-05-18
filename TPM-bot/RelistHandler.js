@@ -696,6 +696,7 @@ class RelistHandler {
             this.state.set('listing');
             try {
                 await this.getItemAndMove("ABIPHONE");
+                debug(`Moved item maybe`);
                 await betterOnce(bot, "windowOpen");
                 let Jotraeline = (bot.currentWindow?.slots?.find(slot => slot?.nbt?.value?.display?.value?.Name?.value?.includes("Jotraeline Greatforge")))?.slot;
                 if (!Jotraeline) throw new Error(`No slot found for clicking Jotraeline`);
@@ -808,11 +809,12 @@ class RelistHandler {
         return new Promise(async (resolve, reject) => {
             const { bot } = this;
             try {
+                bot.betterWindowClose();
                 let slot = (bot.inventory.slots.find(slot => this.getName(slot?.nbt?.value?.ExtraAttributes?.value)?.includes(itemName)))?.slot;
                 debug(`Got ${itemName} slot ${slot}`);
                 if (!slot) {
                     reject(`No ${itemName} found`);
-                    debug(JSON.stringify(bot.inventory.slots));
+                    // debug(JSON.stringify(bot.inventory.slots));
                 } else {
                     if (slot < 36) {//not in hotbar. It would auto go to hotbar so that mean it's full
                         bot.clickWindow(slot, 0, 2);//can't use betterclick because it has failsafe for no window open and we don't want one open!
