@@ -15,7 +15,7 @@ const defaultConfig = `{
 
     //Fancy TPM Backend Recode bot
     //MUST Use this bot https://discord.com/oauth2/authorize?client_id=1348096922736660552&permissions=8&integration_type=0&scope=bot
-    "useSpecialBackend: false,
+    "useSpecialBackend": false,
 
     //{0} is item. {1} is profit. {2} is price. {3} is target. {4} is buyspeed. {5} is BED or NUGGET. {6} is finder. {7} is the auctionID. {8} is the shortened price. {9} is the bot's username. {10} is the flip volume. {11} is the flip profit percentage
     "webhookFormat": "You bought [\`\`{0}\`\`](https://sky.coflnet.com/auction/{7}) for \`\`{2}\`\` (\`\`{1}\`\` profit) in \`\`{4}ms\`\`",
