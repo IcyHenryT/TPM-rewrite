@@ -825,7 +825,7 @@ class RelistHandler {
                 }
                 await sleep(500);
                 bot.setQuickBarSlot(slot - 36);
-                await sleep(100);
+                await sleep(2500);
                 bot.activateItem();
                 resolve(true);
             } catch (e) {

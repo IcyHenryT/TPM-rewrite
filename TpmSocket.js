@@ -2,7 +2,7 @@ const { logmc, debug, error, startTracker, getIgns } = require('./logger.js');
 const { sleep, normalNumber, sendDiscord, sendLatestLog, formatNumber, nicerFinders, normalTime, noColorCodes, getSlotLore, addCommasToNumber } = require('./TPM-bot/Utils.js');
 const { config } = require('./config.js');
 const axios = require('axios');
-let { igns, webhook, discordID, allowedIDs, pingOnUpdate, useSpecialBackend } = config;
+let { igns, webhook, discordID, allowedIDs, pingOnUpdate } = config;
 
 if (allowedIDs) {
     if (!allowedIDs.includes(discordID)) allowedIDs.push(discordID);
@@ -27,7 +27,7 @@ class TpmSocket {
     makeWebsocket() {
         try {
             debug(`Making new TPM socket`);
-            const link = useSpecialBackend ? 'ws://172.236.108.246:1250' : 'ws://107.152.38.30:1241'
+            const link = 'ws://107.152.38.30:1241'
             this.ws = new WebSocket(link);//random VPS
 
             this.ws.on('open', async () => {
