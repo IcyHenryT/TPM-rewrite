@@ -1,24 +1,78 @@
+// Core dependencies
 const { getPackets } = require('./packets.js');
 const { config } = require('../config.js');
-const { stripItemName, IHATETAXES, normalizeDate, getWindowName, isSkin, sleep, normalNumber, normalTime, getSlotLore, noColorCodes, sendDiscord, formatNumber, nicerFinders, betterOnce } = require('./Utils.js');
+const { 
+    stripItemName, 
+    IHATETAXES, 
+    normalizeDate, 
+    getWindowName, 
+    isSkin, 
+    sleep, 
+    normalNumber, 
+    normalTime, 
+    getSlotLore, 
+    noColorCodes, 
+    sendDiscord, 
+    formatNumber, 
+    nicerFinders, 
+    betterOnce 
+} = require('./Utils.js');
 const { logmc, debug, removeIgn, error } = require('../logger.js');
 
+// Constants
 const {
+    // Slot indices
     SLOT_MAIN_ITEM,
     SLOT_CONFIRM_BUTTON,
     SLOT_LORE,
     SLOT_ALTERNATE_ITEM,
     SLOT_DELIST,
+    
+    // Packet IDs
     CLICK_PACKET_PRIMARY,
     CLICK_PACKET_SKIP,
+    
+    // Window titles
+    WINDOW_TITLES,
+    
+    // Item names
+    ITEMS,
+    
+    // Bot states
+    STATES,
+    
+    // Timing constants
     MAX_BED_CLICK_ATTEMPTS,
     BED_SPAM_MAX_UNDEFINED,
     DEFAULT_DELAY_BETWEEN_CLICKS,
     MIN_DELAY_WITH_SKIP,
+    WINDOW_CLOSE_DELAY,
+    ITEM_LOAD_TIMEOUT,
+    CLICK_RETRY_DELAY,
+    COOP_PREVENTION_DELAY
 } = require('./constants.js');
 
-let { delay, waittime, skip: skipSettings, clickDelay, bedSpam, delayBetweenClicks, angryCoopPrevention: coop, sendAllFlips: flipsWebhook, useItemImage } = config;
-let { always: useSkip, minProfit: skipMinProfit, userFinder: skipUser, skins: skipSkins, profitPercentage: skipMinPercent, minPrice: skipMinPrice } = skipSettings;
+// Configuration
+let { 
+    delay, 
+    waittime, 
+    skip: skipSettings, 
+    clickDelay, 
+    bedSpam, 
+    delayBetweenClicks, 
+    angryCoopPrevention: coop, 
+    sendAllFlips: flipsWebhook, 
+    useItemImage 
+} = config;
+
+let { 
+    always: useSkip, 
+    minProfit: skipMinProfit, 
+    userFinder: skipUser, 
+    skins: skipSkins, 
+    profitPercentage: skipMinPercent, 
+    minPrice: skipMinPrice 
+} = skipSettings;
 skipMinProfit = normalNumber(skipMinProfit);
 skipMinPercent = normalNumber(skipMinPercent);
 skipMinPrice = normalNumber(skipMinPrice);
@@ -60,11 +114,11 @@ class AutoBuy {
 
         bot._client.on('open_window', async (window) => {
             const windowID = window.windowId;
-            const nextWindowID = windowID === 100 ? 1 : windowID + 1;
+            const nextWindowID = windowID === WINDOW_ID_RESET ? 1 : windowID + 1;
             const windowName = window.windowTitle;
             debug(`Got new window ${windowName}, ${windowID} ${this.fromCoflSocket}`);
             packets.confirmClick(windowID);
-            if (windowName === '{"italic":false,"extra":[{"text":"BIN Auction View"}],"text":""}' && state.get() !== 'listing') {
+            if (windowName === WINDOW_TITLES.BIN_AUCTION_VIEW && state.get() !== STATES.LISTING) {
                 const finderCheck = this.recentFinder === "USER" && skipUser;
                 const skinCheck = isSkin(this.recentName) && skipSkins;
                 const profitCheck = this.recentProfit > skipMinProfit;
@@ -76,7 +130,7 @@ class AutoBuy {
                 firstGui = Date.now();
                 webhook.setBuySpeed(firstGui);
                 let item = (await this.itemLoad(SLOT_MAIN_ITEM))?.name;
-                if (item === 'gold_nugget') {
+                if (item === ITEMS.GOLD_NUGGET) {
                     packets.click(SLOT_MAIN_ITEM, windowID, CLICK_PACKET_PRIMARY);
                     bot.betterClick(SLOT_MAIN_ITEM, 0, 0);
                     if (useSkipOnFlip) {
@@ -100,35 +154,35 @@ class AutoBuy {
                 this.recentlySkipped = false;
 
                 switch (item) {
-                    case "bed":
-                        logmc(`§6[§bTPM§6]§6 Found a bed!`)
-                        if (!bedSpam && !this.bedFailed && !this.currentlyTimingBed) this.bedFailed = true;//Sometimes beds aren't timed idk why but this should be a good failsafe
+                    case ITEMS.BED:
+                        logmc(`§6[§bTPM§6]§6 Found a bed!`);
+                        if (!bedSpam && !this.bedFailed && !this.currentlyTimingBed) this.bedFailed = true; // Sometimes beds aren't timed
                         this.initBedSpam();
                         break;
                     case null:
                     case undefined:
-                    case "potato":
+                    case ITEMS.POTATO:
                         logmc(`§6[§bTPM§6]§c Potatoed :(`);
                         bot.betterWindowClose();
                         state.set(null);
                         state.setAction(firstGui);
                         break;
-                    case "feather":
+                    case ITEMS.FEATHER:
                         const secondItem = (await this.itemLoad(SLOT_MAIN_ITEM, true))?.name;
-                        if (secondItem === 'potato') {
-                            logmc(`§6[§bTPM§6]§c Potatoed :(`)
+                        if (secondItem === ITEMS.POTATO) {
+                            logmc(`§6[§bTPM§6]§c Potatoed :(`);
                             bot.betterWindowClose();
                             state.set(null);
                             state.setAction(firstGui);
                             break;
-                        } else if (secondItem !== 'gold_block') {
+                        } else if (secondItem !== ITEMS.GOLD_BLOCK) {
                             debug(`Found a weird item on second run through ${secondItem}`);
                             bot.betterWindowClose();
                             state.set(null);
                             state.setAction(firstGui);
                             break;
                         }
-                    case "gold_block":
+                    case ITEMS.GOLD_BLOCK:
                         if (coop) {
                             await bot.waitForTicks(15);
                             const lore = getSlotLore(bot.currentWindow?.slots?.[13]);
@@ -158,17 +212,17 @@ class AutoBuy {
                         if (state.get() !== "getting ready") state.set(null);
                         state.setAction(firstGui);
                         break;
-                    case "poisonous_potato":
+                    case ITEMS.POISONOUS_POTATO:
                         logmc(`§6[§bTPM§6]§c Too poor to buy it :(`);
                         bot.betterWindowClose();
                         state.set(null);
                         state.setAction(firstGui);
                         break;
-                    case "stained_glass_pane":
-                        if (state.get() === 'delisting') {
-                            this.bot.betterClick(33);
-                            debug(`clicked delist`);
-                        } else if (state.get() == "expired") {//This means that it didn't actually expire but it thinks that it did
+                    case ITEMS.STAINED_GLASS_PANE:
+                        if (state.get() === STATES.DELISTING) {
+                            this.bot.betterClick(SLOT_DELIST);
+                            debug('Clicked delist');
+                        } else if (state.get() === STATES.EXPIRED) {//This means that it didn't actually expire but it thinks that it did
                             const slot = bot.currentWindow.slots[13];
                             const lore = getSlotLore(slot);
                             const endsInTime = lore.find(line => line.includes('Ends in:'));
@@ -202,8 +256,8 @@ class AutoBuy {
                             state.setAction(firstGui);
                         }
                         break;
-                    case "gold_nugget":
-                        if (state.get() === "expired") {
+                    case ITEMS.GOLD_NUGGET:
+                        if (state.get() === STATES.EXPIRED) {
                             state.setAction();
                             state.set(null);
                             this.relist.declineSoldAuction();
@@ -218,7 +272,7 @@ class AutoBuy {
                         break;
                 }
 
-            } else if (windowName === '{"italic":false,"extra":[{"text":"Confirm Purchase"}],"text":""}') {
+            } else if (windowName === WINDOW_TITLES.CONFIRM_PURCHASE) {
                 let confirmAt = Date.now() - firstGui;
                 state.setAction(firstGui);
                 logmc(`§6[§bTPM§6] §3Confirm at ${confirmAt}ms`);
