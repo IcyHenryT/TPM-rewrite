@@ -47,6 +47,7 @@ class CoflWs {
             this.reconnect = true;
             logmc(`§6[§bTPM§6] §eStarted cofl connection!`);
             ws.emit("open", message);
+            this.sendScoreboard();
         })
 
         websocket.on('close', async () => {

@@ -588,6 +588,13 @@ const coolerQueue = {//use state as key to get a cool message
     externalBuying: function (action) {
         const { finder, profit, itemName, auctionID, startingBid } = action;
         return `Buying [\`${itemName}\`](https://sky.coflnet.com/a/${auctionID}) from ${finder} for \`${formatNumber(startingBid)}\` (\`${formatNumber(profit)}\` profit)`
+    },
+    bids: function () {
+        return `Checking bids`
+    },
+    bank: function (action) {
+        const { amount, withdraw, personal } = action;
+        return `${withdraw ? "Withdrawing" : "Depositing"} \`${formatNumber(amount)}\` ${personal ? "to personal bank" : "to bank"}`
     }
 }
 
