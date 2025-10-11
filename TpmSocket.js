@@ -27,7 +27,7 @@ class TpmSocket {
     makeWebsocket() {
         try {
             debug(`Making new TPM socket`);
-            const link = 'ws://107.152.38.30:1241'
+            const link = 'ws://104.245.104.234:1241'
             this.ws = new WebSocket(link);//random VPS
 
             this.ws.on('open', async () => {
