@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,20 +10,54 @@
 <div class="container">
     <header>
         <h1>TPM CONTROL PANEL</h1>
+        <div class="bot-selector">
+            <select id="bot-select">
+                <option value="">Select Bot</option>
+            </select>
+            <button id="refresh-inventory" class="action-btn">Refresh Inventory</button>
+            <button id="refresh-auctions" class="action-btn">Refresh Auctions</button>
+        </div>
     </header>
 
+    <div class="tabs">
+        <button class="tab active" data-tab="bots">Statistics</button>
+        <button class="tab" data-tab="inventory">Inventory</button>
+        <button class="tab" data-tab="auctions">Auctions</button>
+        <button class="tab" data-tab="console">Console</button>
+    </div>
+
     <div class="content">
-        <div class="bots-section">
-            <h2>ACTIVE BOTS</h2>
-            <div id="bots-container"></div>
+        <div class="tab-content active" id="bots-tab">
+            <div class="bots-section">
+                <h2>ACTIVE BOTS</h2>
+                <div id="bots-container"></div>
+            </div>
         </div>
 
-        <div class="console-section">
-            <h2>CONSOLE</h2>
-            <div id="console" class="console"></div>
+        <div class="tab-content" id="inventory-tab">
+            <div class="inventory-section">
+                <h2>INVENTORY</h2>
+                <div id="inventory-container" class="items-grid"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="auctions-tab">
+            <div class="auctions-section">
+                <h2>MY AUCTIONS</h2>
+                <div id="auctions-container" class="items-grid"></div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="console-tab">
+            <div class="console-section">
+                <h2>CONSOLE</h2>
+                <div id="console" class="console"></div>
+            </div>
         </div>
     </div>
 </div>
+
+<div id="tooltip" class="tooltip"></div>
 
 <script src="app.js"></script>
 </body>

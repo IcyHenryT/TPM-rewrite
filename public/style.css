@@ -12,7 +12,7 @@ body {
 }
 
 .container {
-    max-width: 1600px;
+    max-width: 1800px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -21,6 +21,9 @@ header {
     border-bottom: 1px solid #333;
     padding-bottom: 20px;
     margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 h1 {
@@ -37,22 +40,73 @@ h2 {
     margin-bottom: 15px;
 }
 
-.content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
+.bot-selector {
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
-@media (max-width: 1200px) {
-    .content {
-        grid-template-columns: 1fr;
-    }
-}
-
-.bots-section,
-.console-section {
+#bot-select {
+    background: #111;
     border: 1px solid #333;
-    padding: 20px;
+    color: #fff;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.action-btn {
+    background: #222;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 8px 15px;
+    font-size: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: background 0.2s;
+}
+
+.action-btn:hover {
+    background: #333;
+}
+
+.tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid #333;
+    margin-bottom: 30px;
+}
+
+.tab {
+    background: #111;
+    border: none;
+    color: #666;
+    padding: 15px 30px;
+    font-size: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    color: #fff;
+    background: #1a1a1a;
+}
+
+.tab.active {
+    color: #fff;
+    background: #000;
+    border-bottom: 2px solid #fff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
 }
 
 #bots-container {
@@ -89,7 +143,7 @@ h2 {
 
 .bot-stats {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
 }
 
@@ -110,6 +164,120 @@ h2 {
     font-family: 'Courier New', monospace;
     font-size: 16px;
     font-weight: 600;
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    padding: 10px;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    min-height: 400px;
+}
+
+.item-slot {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.item-slot:hover {
+    border-color: #666;
+    transform: scale(1.05);
+}
+
+.item-slot.empty {
+    opacity: 0.3;
+}
+
+.item-image {
+    width: 64px;
+    height: 64px;
+    image-rendering: pixelated;
+}
+
+.item-count {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 2px 2px 2px #000;
+}
+
+.item-price {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    font-size: 10px;
+    color: #0f0;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2px 4px;
+    border-radius: 2px;
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.auction-status {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 9px;
+    padding: 2px 5px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 2px;
+    font-weight: bold;
+}
+
+.auction-status.active {
+    color: #0f0;
+}
+
+.auction-status.sold {
+    color: #ff0;
+}
+
+.auction-time {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-size: 9px;
+    color: #888;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+.tooltip {
+    position: fixed;
+    background: rgba(16, 0, 16, 0.95);
+    border: 2px solid #a100a1;
+    padding: 8px;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+    max-width: 300px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.tooltip.show {
+    display: block;
+}
+
+.tooltip-line {
+    margin: 2px 0;
 }
 
 .console {
@@ -159,4 +327,33 @@ h2 {
 .uptime {
     font-size: 11px;
     color: #666;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    color: #666;
+    font-size: 14px;
+}
+
+@media (max-width: 1200px) {
+    .bot-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .items-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+
+    .item-slot {
+        width: 60px;
+        height: 60px;
+    }
+
+    .item-image {
+        width: 48px;
+        height: 48px;
+    }
 }

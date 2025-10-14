@@ -1,5 +1,8 @@
 let ws;
 let reconnectInterval;
+let currentBot = null;
+let inventoryData = null;
+let auctionsData = null;
 
 function connect() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -16,22 +19,29 @@ function connect() {
     ws.onmessage = (event) => {
         try {
             const message = JSON.parse(event.data);
-            console.log('Received:', message.type, message);
+            console.log('Received:', message.type);
 
             switch (message.type) {
                 case 'init':
                     console.log('Init - bots:', message.data.bots.length, 'logs:', message.data.logs.length);
                     updateBots(message.data.bots);
+                    updateBotSelector(message.data.bots);
                     if (message.data.logs && message.data.logs.length > 0) {
                         message.data.logs.forEach(log => addLogLine(log));
                     }
                     break;
                 case 'update':
                     updateBots(message.data);
+                    updateBotSelector(message.data);
                     break;
                 case 'log':
-                    console.log('Adding log line:', message.data);
                     addLogLine(message.data);
+                    break;
+                case 'inventoryData':
+                    handleInventoryData(message.data);
+                    break;
+                case 'auctionsData':
+                    handleAuctionsData(message.data);
                     break;
             }
         } catch (e) {
@@ -133,6 +143,122 @@ function updateBots(bots) {
     `).join('');
 }
 
+function updateBotSelector(bots) {
+    const select = document.getElementById('bot-select');
+    const currentValue = select.value;
+
+    select.innerHTML = '<option value="">Select Bot</option>' +
+        bots.map(bot => `<option value="${bot.name}">${bot.name}</option>`).join('');
+
+    if (currentValue && bots.find(b => b.name === currentValue)) {
+        select.value = currentValue;
+    } else if (bots.length === 1) {
+        select.value = bots[0].name;
+        currentBot = bots[0].name;
+    }
+}
+
+function handleInventoryData(data) {
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+    inventoryData = parsedData;
+    displayInventory(parsedData.invData);
+}
+
+function handleAuctionsData(data) {
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+    auctionsData = parsedData;
+    displayAuctions(parsedData.auctions);
+}
+
+function displayInventory(items) {
+    const container = document.getElementById('inventory-container');
+
+    if (!items || items.length === 0) {
+        container.innerHTML = '<div class="loading">No items in inventory</div>';
+        return;
+    }
+
+    container.innerHTML = items.map(item => {
+        const imageUrl = `https://sky.coflnet.com/static/icon/${item.tag}`;
+        const count = item.count > 1 ? `<div class="item-count">${item.count}</div>` : '';
+        const price = item.goodPrice > 0 ? `<div class="item-price">${formatNumber(item.goodPrice)}</div>` : '';
+
+        return `
+            <div class="item-slot" data-item='${JSON.stringify(item)}'>
+                <img src="${imageUrl}" class="item-image" alt="${item.itemName}" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='">
+                ${count}
+                ${price}
+            </div>
+        `;
+    }).join('');
+
+    addTooltipListeners();
+}
+
+function displayAuctions(auctions) {
+    const container = document.getElementById('auctions-container');
+
+    if (!auctions || auctions.length === 0) {
+        container.innerHTML = '<div class="loading">No active auctions</div>';
+        return;
+    }
+
+    container.innerHTML = auctions.map(auction => {
+        const imageUrl = `https://sky.coflnet.com/static/icon/${auction.tag}`;
+        const count = auction.count > 1 ? `<div class="item-count">${auction.count}</div>` : '';
+        const price = `<div class="item-price">${formatNumber(auction.price)}</div>`;
+        const timeLeft = auction.timeLeft > 0 ? `<div class="auction-time">${formatTime(auction.timeLeft)}</div>` : '';
+
+        return `
+            <div class="item-slot" data-item='${JSON.stringify(auction)}'>
+                <img src="${imageUrl}" class="item-image" alt="${auction.itemName}" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='">
+                ${count}
+                ${price}
+                ${timeLeft}
+            </div>
+        `;
+    }).join('');
+
+    addTooltipListeners();
+}
+
+function addTooltipListeners() {
+    const tooltip = document.getElementById('tooltip');
+    const items = document.querySelectorAll('.item-slot');
+
+    items.forEach(slot => {
+        slot.addEventListener('mouseenter', (e) => {
+            const item = JSON.parse(slot.dataset.item);
+            showTooltip(e, item, tooltip);
+        });
+
+        slot.addEventListener('mousemove', (e) => {
+            tooltip.style.left = e.clientX + 15 + 'px';
+            tooltip.style.top = e.clientY + 15 + 'px';
+        });
+
+        slot.addEventListener('mouseleave', () => {
+            tooltip.classList.remove('show');
+        });
+    });
+}
+
+function showTooltip(e, item, tooltip) {
+    let content = '';
+
+    if (item.lore) {
+        content = item.lore.map(line => {
+            const cleaned = line.replace(/§./g, '');
+            return `<div class="tooltip-line">${cleaned}</div>`;
+        }).join('');
+    }
+
+    tooltip.innerHTML = content;
+    tooltip.classList.add('show');
+    tooltip.style.left = e.clientX + 15 + 'px';
+    tooltip.style.top = e.clientY + 15 + 'px';
+}
+
 function addLogLine(log) {
     const consoleEl = document.getElementById('console');
     if (!consoleEl) {
@@ -154,8 +280,47 @@ function addLogLine(log) {
     while (consoleEl.children.length > 500) {
         consoleEl.removeChild(consoleEl.firstChild);
     }
-
-    console.log('Log line added to console');
 }
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        tab.classList.add('active');
+        const tabName = tab.dataset.tab;
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    });
+});
+
+document.getElementById('bot-select').addEventListener('change', (e) => {
+    currentBot = e.target.value;
+});
+
+document.getElementById('refresh-inventory').addEventListener('click', () => {
+    if (!currentBot) {
+        alert('Please select a bot first');
+        return;
+    }
+
+    document.getElementById('inventory-container').innerHTML = '<div class="loading">Loading inventory...</div>';
+    ws.send(JSON.stringify({
+        type: 'requestInventory',
+        username: currentBot
+    }));
+});
+
+document.getElementById('refresh-auctions').addEventListener('click', () => {
+    if (!currentBot) {
+        alert('Please select a bot first');
+        return;
+    }
+
+    document.getElementById('auctions-container').innerHTML = '<div class="loading">Loading auctions...</div>';
+    ws.send(JSON.stringify({
+        type: 'requestAuctions',
+        username: currentBot
+    }));
+});
 
 connect();

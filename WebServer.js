@@ -2,7 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const WebSocket = require('ws');
-const { formatNumber } = require('./TPM-bot/Utils.js');
+const { formatNumber, getSlotLore, noColorCodes, onlyNumbers, normalTime, sleep } = require('./TPM-bot/Utils.js');
+const axios = require('axios');
 
 class WebServer {
     constructor(port, bots) {
@@ -33,6 +34,15 @@ class WebServer {
                 }
             }));
 
+            ws.on('message', async (message) => {
+                try {
+                    const data = JSON.parse(message);
+                    await this.handleWebSocketMessage(data, ws);
+                } catch (e) {
+                    console.error('Error parsing WebSocket message:', e);
+                }
+            });
+
             ws.on('close', () => {
                 this.clients.delete(ws);
             });
@@ -48,6 +58,143 @@ class WebServer {
                 data: this.getBotsData()
             });
         }, 1000);
+    }
+
+    async handleWebSocketMessage(data, ws) {
+        if (data.type === 'requestInventory') {
+            const username = data.username;
+            const bot = this.bots[username];
+
+            if (!bot) {
+                console.log(`Bot not found: ${username}`);
+                return;
+            }
+
+            try {
+                const slots = bot.getBot().inventory.slots;
+
+                const pricingData = (await axios.post('https://sky.coflnet.com/api/price/nbt', {
+                    jsonNbt: JSON.stringify(bot.getBot().inventory),
+                }, {
+                    headers: {
+                        'accept': 'text/plain',
+                        'Content-Type': 'application/json-patch+json',
+                    },
+                })).data;
+
+                let invData = slots.slice(9, slots.length).map(slot => {
+                    if (!slot) return null;
+                    const uuid = bot.relist.getItemUuid(slot);
+                    const lore = getSlotLore(slot);
+                    const itemName = slot?.nbt?.value?.display?.value?.Name?.value;
+                    const tag = bot.relist.getName(slot?.nbt?.value?.ExtraAttributes?.value);
+                    const count = slot.count;
+                    let priceData = pricingData[slot?.slot];
+                    if (!priceData) {
+                        priceData = {
+                            median: 0,
+                            lbin: 0,
+                            volume: 0
+                        }
+                    }
+                    let goodPrice = bot.relist.sillyPriceAlg(priceData?.median, priceData?.volume, priceData?.lbin);
+                    return {
+                        lore,
+                        uuid,
+                        itemName,
+                        tag,
+                        count,
+                        goodPrice: Math.round(goodPrice)
+                    }
+                }).filter(slot => slot !== null);
+
+                ws.send(JSON.stringify({
+                    type: 'inventoryData',
+                    data: JSON.stringify({
+                        invData,
+                        username,
+                        uuid: bot.getBot().uuid
+                    })
+                }));
+            } catch (e) {
+                console.error('Error getting inventory:', e);
+            }
+        } else if (data.type === 'requestAuctions') {
+            const username = data.username;
+            const bot = this.bots[username];
+
+            if (!bot) {
+                console.log(`Bot not found: ${username}`);
+                return;
+            }
+
+            try {
+                const auctionData = await this.getAuctionData(bot);
+
+                ws.send(JSON.stringify({
+                    type: 'auctionsData',
+                    data: JSON.stringify({
+                        auctions: auctionData,
+                        username,
+                        uuid: bot.getBot().uuid
+                    })
+                }));
+            } catch (e) {
+                console.error('Error getting auctions:', e);
+            }
+        }
+    }
+
+    async getAuctionData(bot) {
+        const botInstance = bot.getBot();
+        botInstance.chat('/ah');
+        await sleep(1000);
+
+        if (!botInstance.currentWindow) {
+            return [];
+        }
+
+        botInstance.betterClick(15);
+        await sleep(500);
+
+        const auctionSlots = [];
+        if (botInstance.currentWindow && botInstance.currentWindow.slots) {
+            for (const slot of botInstance.currentWindow.slots) {
+                if (!slot || !slot.nbt) continue;
+                const lore = getSlotLore(slot);
+                if (!lore) continue;
+
+                const hasSeller = lore.find(line => line.includes('Seller:'));
+                if (!hasSeller || !hasSeller.includes(botInstance.username)) continue;
+
+                const itemName = slot?.nbt?.value?.display?.value?.Name?.value;
+                const tag = bot.relist.getName(slot?.nbt?.value?.ExtraAttributes?.value);
+                const uuid = bot.relist.getItemUuid(slot);
+                const count = slot.count;
+
+                const endsInTime = lore.find(line => line.includes('Ends in:'));
+                const priceLine = lore.find(line => noColorCodes(line).includes('Buy it now') || noColorCodes(line).includes('Starting bid'));
+                const hasBuyer = lore.find(line => line.includes('Buyer:'));
+
+                const timeLeft = endsInTime ? normalTime(endsInTime) : 0;
+                const price = priceLine ? onlyNumbers(noColorCodes(priceLine)) : 0;
+                const status = hasBuyer ? 'sold' : 'active';
+
+                auctionSlots.push({
+                    itemName,
+                    tag,
+                    uuid,
+                    count,
+                    price,
+                    timeLeft,
+                    status,
+                    lore
+                });
+            }
+        }
+
+        botInstance.betterWindowClose();
+        return auctionSlots;
     }
 
     handleRequest(req, res) {
