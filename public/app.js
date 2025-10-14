@@ -402,7 +402,7 @@ async function loadConfig() {
 function displayConfig(config) {
     const editor = document.getElementById('config-editor');
 
-    const basicSettings = ['igns', 'discordID', 'webhook', 'webPort', 'webPin', 'delay', 'waittime'];
+    const basicSettings = ['igns', 'discordID', 'webhook', 'webPort', 'webHost', 'webPin', 'delay', 'waittime'];
     const relistSettings = ['relist', 'useCookie', 'autoCookie', 'percentOfTarget', 'listHours'];
 
     let html = '<div class="config-group"><h3>Basic Settings</h3>';
@@ -467,30 +467,6 @@ async function saveConfig() {
         }
     } catch (e) {
         showNotification('Failed to save config', 'error');
-    }
-}
-
-async function restartBot() {
-    if (!confirm('Are you sure you want to restart TPM? This will disconnect temporarily.')) {
-        return;
-    }
-
-    try {
-        await fetch('/api/restart', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        showNotification('TPM is restarting...', 'success');
-
-        setTimeout(() => {
-            window.location.reload();
-        }, 5000);
-    } catch (e) {
-        console.log('Server restarting...');
-        setTimeout(() => {
-            window.location.reload();
-        }, 5000);
     }
 }
 
@@ -674,7 +650,6 @@ document.getElementById('refresh-auctions').addEventListener('click', () => {
 });
 
 document.getElementById('save-config').addEventListener('click', saveConfig);
-document.getElementById('restart-bot').addEventListener('click', restartBot);
 
 document.getElementById('history-search').addEventListener('input', (e) => {
     filterHistory(e.target.value);

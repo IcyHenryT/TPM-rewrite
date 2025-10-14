@@ -173,16 +173,6 @@ h2 {
     background: #333;
 }
 
-.restart-btn {
-    background: #aa0000;
-    border: 1px solid #cc0000;
-}
-
-.restart-btn:hover {
-    background: #cc0000;
-    border-color: #ff0000;
-}
-
 .tabs {
     display: flex;
     gap: 2px;

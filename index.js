@@ -14,7 +14,7 @@ const { sendDiscord, sendLatestLog, sleep } = require('./TPM-bot/Utils.js');
 const { getTokenInfo } = require('./TPM-bot/TokenHandler.js');
 const { config, updateConfig } = require('./config.js');
 
-let { igns, autoRotate, useItemImage, webPort } = config;
+let { igns, autoRotate, useItemImage, webPort, webHost } = config;
 let bots = {};
 let askPrefixes = {};
 let tws;
@@ -46,7 +46,7 @@ testIgn();
 
     tws = new TpmSocket(bots, destroyBot, startBot);
 
-    webServer = new WebServer(webPort || 3000, bots);
+    webServer = new WebServer(webPort || 3000, webHost || 'localhost', bots);
     webServer.start();
     setWebServer(webServer);
 

@@ -41,6 +41,9 @@ const defaultConfig = `{
     //Web interface port
     "webPort": 3000,
 
+    //Web interface host
+    "webHost": "localhost",
+
     //Web interface PIN code
     "webPin": "0000",
 

@@ -7,8 +7,9 @@ const axios = require('axios');
 const { config, updateConfig } = require('./config.js');
 
 class WebServer {
-    constructor(port, bots) {
+    constructor(port, host, bots) {
         this.port = port;
+        this.host = host;
         this.bots = bots;
         this.server = null;
         this.wss = null;
@@ -52,8 +53,8 @@ class WebServer {
             });
         });
 
-        this.server.listen(this.port, () => {
-            console.log(`Web interface: http://localhost:${this.port}`);
+        this.server.listen(this.port, this.host, () => {
+            console.log(`Web interface: http://${this.host}:${this.port}`);
         });
 
         setInterval(() => {
@@ -105,17 +106,6 @@ class WebServer {
                     res.end(JSON.stringify({ error: e.message }));
                 }
             });
-            return;
-        }
-
-        if (url.pathname === '/api/restart' && req.method === 'POST') {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: true, message: 'Server restarting...' }));
-
-            setTimeout(() => {
-                console.log('Restarting TPM server...');
-                process.exit(0);
-            }, 1000);
             return;
         }
 
