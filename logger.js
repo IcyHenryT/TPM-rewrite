@@ -10,28 +10,34 @@ let tracking = false;
 let currentIgns = [];
 let ignColors = {};
 const directoryPath = './logs';
+let webServerInstance = null;
 
 const colors = {
-    '1': '\x1b[34m', // dark blue
-    '2': '\x1b[32m', // dark green
-    '3': '\x1b[36m', // dark cyan
-    '4': '\x1b[31m', // dark red
-    '6': '\x1b[33m', // dark yellow
-    '9': '\x1b[94m', // light blue
-    'a': '\x1b[92m', // light green
-    'b': '\x1b[96m', // light cyan
-    'c': '\x1b[91m', // light red
-    'd': '\x1b[95m', // light magenta
-    'e': '\x1b[93m', // yellow
-    '7': '\x1b[37m', // light gray
-    '8': '\x1b[90m', // dark gray
-    'f': '\x1b[97m', // white
-    '0': '\x1b[30m', // black
-    '5': '\x1b[35m'  // dark magenta
+    '1': '\x1b[34m',
+    '2': '\x1b[32m',
+    '3': '\x1b[36m',
+    '4': '\x1b[31m',
+    '6': '\x1b[33m',
+    '9': '\x1b[94m',
+    'a': '\x1b[92m',
+    'b': '\x1b[96m',
+    'c': '\x1b[91m',
+    'd': '\x1b[95m',
+    'e': '\x1b[93m',
+    '7': '\x1b[37m',
+    '8': '\x1b[90m',
+    'f': '\x1b[97m',
+    '0': '\x1b[30m',
+    '5': '\x1b[35m'
 };
 
 const colorKeys = Object.keys(colors);
 const badColors = new Set(['§0', '§5', '§f', '§8', '§7', '§2', '§9']);
+
+function setWebServer(ws) {
+    webServerInstance = ws;
+    console.log('WebServer instance set in logger');
+}
 
 function updateIgns(ign) {
     currentIgns.push(ign);
@@ -56,6 +62,15 @@ async function logmc(string) {
     let msg = '';
     if (!string) return;
     if (tracking) messages.push(string.replace(/§./g, ''));
+
+    if (webServerInstance) {
+        try {
+            webServerInstance.addLog(string);
+        } catch (e) {
+            console.error('Error adding log to webserver:', e);
+        }
+    }
+
     let split = string.split('§');
     msg += split[0];
 
@@ -85,7 +100,6 @@ function customIGNColor(ign, attempt = 0) {
     return randomColor;
 }
 
-//winston stuff below
 if (!fs.existsSync(directoryPath)) {
     fs.mkdirSync(directoryPath);
 }
@@ -117,7 +131,6 @@ if (!fs.existsSync(latestLogPath)) {
     fs.truncateSync(latestLogPath, 0);
 }
 
-// Regex to match ANSI escape sequences
 const ansiRegex = /\x1b\[[0-9;]*m/g;
 
 const regex = /[a-zA-Z0-9!@#$%^&*()_+\-=[\]{}|;:'",. <>/?`~\\]/g;
@@ -176,7 +189,7 @@ function getLatestLog() {
     }
     const logFile = fs.createReadStream(logFilePath);
     const form = new FormData();
-    form.setMaxListeners(20);//:(
+    form.setMaxListeners(20);
     form.append('file', logFile, 'latest.log');
     return form;
 }
@@ -191,4 +204,4 @@ async function startTracker(timer = 10_000) {
     return messages;
 }
 
-module.exports = { logmc, customIGNColor, silly, debug, error, info, getPrefix, updateIgns, removeIgn, getIgns, startTracker, getLatestLog };
+module.exports = { logmc, customIGNColor, silly, debug, error, info, getPrefix, updateIgns, removeIgn, getIgns, startTracker, getLatestLog, setWebServer };

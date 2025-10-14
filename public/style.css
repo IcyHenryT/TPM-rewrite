@@ -1,0 +1,162 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #000;
+    color: #fff;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    border-bottom: 1px solid #333;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+
+h1 {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+
+h2 {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: #888;
+    margin-bottom: 15px;
+}
+
+.content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+@media (max-width: 1200px) {
+    .content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.bots-section,
+.console-section {
+    border: 1px solid #333;
+    padding: 20px;
+}
+
+#bots-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.bot-card {
+    border: 1px solid #333;
+    padding: 15px;
+}
+
+.bot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #222;
+}
+
+.bot-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.bot-state {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #666;
+    letter-spacing: 1px;
+}
+
+.bot-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.console {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    height: 600px;
+    overflow-y: auto;
+    padding: 15px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+.console-line {
+    margin-bottom: 2px;
+    word-wrap: break-word;
+}
+
+.console-time {
+    color: #666;
+    margin-right: 10px;
+}
+
+.console::-webkit-scrollbar {
+    width: 8px;
+}
+
+.console::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+.console::-webkit-scrollbar-thumb {
+    background: #333;
+}
+
+.console::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+.positive {
+    color: #00ff00;
+}
+
+.negative {
+    color: #ff0000;
+}
+
+.uptime {
+    font-size: 11px;
+    color: #666;
+}

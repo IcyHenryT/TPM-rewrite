@@ -29,22 +29,24 @@ class AhBot {
         this.bank = null;
         this.sold = 0;
         this.bought = [];
+        this.failed = 0;
         this.tpm = TPMSocket;
         this.start = Date.now();
         this.destroyBot = destroyBot;
         this.safeIgn = safeIgn;
 
         this.updateBought = this.updateBought.bind(this);
-        this.updateSold = this.updateSold.bind(this);//this whole binding thing is getting annoying
+        this.updateSold = this.updateSold.bind(this);
+        this.updateFailed = this.updateFailed.bind(this);
     }
 
     async startBot() {
-        const { bot, safeIgn: ign, tpm } = this //screw "this"
+        const { bot, safeIgn: ign, tpm } = this
 
         let packets = getPackets(ign);
 
         const state = new StateManager(bot);
-        state.saveQueue()//This just makes the file if it doesn't exist
+        state.saveQueue()
 
         const coflSocket = new CoflWs(ign, bot);
         const ws = coflSocket.getWs();
@@ -53,11 +55,11 @@ class AhBot {
 
         const island = new AutoIsland(ign, state, bot);
 
-        const webhook = new MessageHandler(ign, bot, coflSocket, state, relist, island, this.updateSold, this.updateBought, tpm);
+        const webhook = new MessageHandler(ign, bot, coflSocket, state, relist, island, this.updateSold, this.updateBought, tpm, this.updateFailed);
 
         const bank = new BankHandler(bot, state);
 
-        const autoBuy = new AutoBuy(bot, webhook, coflSocket, ign, state, relist, bank);
+        const autoBuy = new AutoBuy(bot, webhook, coflSocket, ign, state, relist, bank, this.updateFailed);
 
         this.autoBuy = autoBuy;
         this.webhook = webhook;
@@ -107,7 +109,7 @@ class AhBot {
     }
 
     async stop() {
-        this.state.queueAdd('rip', "death", 3);//let everything clear out first
+        this.state.queueAdd('rip', "death", 3);
     }
 
     handleTerminal(command, message) {
@@ -161,7 +163,7 @@ class AhBot {
                     },
                     footer: {
                         text: `TPM Rewrite - Found by Craft Cost - Purse ${formatNumber(this.bot.getPurse(true))}`,
-                        icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                        icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                     }
                 }, this.bot.head, false, this.bot.username)
                 break;
@@ -175,12 +177,12 @@ class AhBot {
         debug(igns);
         let thisPrefix = this.ign.substring(0, sub);
         debug(`|${thisPrefix}|`)
-        if (sub > 10) return this.safeIgn;//recursive safety
+        if (sub > 10) return this.safeIgn;
         try {
             igns.forEach(ign => {
                 if (ign.substring(0, sub) == thisPrefix && ign !== this.ign) {
                     debug(`${ign} start was the same as ${thisPrefix}.`)
-                    sex//i forgot how to throw errors and this is faster than looking it up
+                    sex
                 }
             })
         } catch (e) {
@@ -201,6 +203,10 @@ class AhBot {
 
     updateBought(profit) {
         this.bought.push(profit);
+    }
+
+    updateFailed() {
+        this.failed++;
     }
 }
 

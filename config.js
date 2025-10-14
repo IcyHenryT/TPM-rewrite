@@ -38,6 +38,9 @@ const defaultConfig = `{
     //Pings you when TPM updates (webhook required)
     "pingOnUpdate": false,
 
+    //Web interface port
+    "webPort": 3000,
+
     //Delay between actions. For example, opening flips
     "delay": 250,
 
@@ -148,7 +151,7 @@ config.doNotRelist = { ...parsedDefaultConfig.doNotRelist, ...config.doNotRelist
 config.skip = { ...parsedDefaultConfig.skip, ...config.skip };
 config.autoRotate = { ...parsedDefaultConfig.autoRotate, ...config.autoRotate };
 
-function updateConfig(data) {//golden-fleece my savior idk how to spell that
+function updateConfig(data) {
     const newConfig = patch(defaultConfig, data);
     fs.writeFileSync('./config.json5', newConfig, 'utf-8');
 }

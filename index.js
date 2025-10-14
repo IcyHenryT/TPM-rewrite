@@ -1,6 +1,6 @@
 const prompt = require('prompt-sync')();
 const { randomUUID } = require('crypto');
-const { logmc, updateIgns, getIgns, error, debug } = require('./logger.js');
+const { logmc, updateIgns, getIgns, error, debug, setWebServer } = require('./logger.js');
 const readline = require('readline');
 const rl = readline.createInterface({
     input: process.stdin,
@@ -9,14 +9,16 @@ const rl = readline.createInterface({
 
 const AhBot = require('./TPM-bot/AhBot.js');
 const TpmSocket = require('./TpmSocket.js');
+const WebServer = require('./WebServer.js');
 const { sendDiscord, sendLatestLog, sleep } = require('./TPM-bot/Utils.js');
 const { getTokenInfo } = require('./TPM-bot/TokenHandler.js');
 const { config, updateConfig } = require('./config.js');
 
-let { igns, autoRotate, useItemImage } = config;
+let { igns, autoRotate, useItemImage, webPort } = config;
 let bots = {};
 let askPrefixes = {};
 let tws;
+let webServer;
 
 function testIgn() {
     if (!igns[0] || igns[0].trim() === "") {
@@ -43,6 +45,10 @@ testIgn();
     let message = '';
 
     tws = new TpmSocket(bots, destroyBot, startBot);
+
+    webServer = new WebServer(webPort || 3000, bots);
+    webServer.start();
+    setWebServer(webServer);
 
     for (const ign of igns) {
         const started = await startBot(ign, tws);
@@ -80,7 +86,7 @@ testIgn();
         },
         footer: {
             text: `The "Perfect" Macro Rewrite`,
-            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
         }
     }, avatar, false, webhookName)
 
@@ -108,7 +114,7 @@ async function destroyBot(ign, secondary = true) {
             },
             footer: {
                 text: `The "Perfect" Macro Rewrite`,
-                icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
             }
         }, useItemImage ? bot.head : null, false, bot.username)
     }
@@ -119,7 +125,7 @@ async function startBot(ign, tws, secondary = false, fromRotate = false) {
     return new Promise(async (resolve) => {
         if (!fromRotate && autoRotate[ign] && autoRotate[ign].split(':')[0].includes('r')) {
             rotate(ign, true);
-            resolve(false);//Don't start the bot if it rests first
+            resolve(false);
             debug(`Not starting ${ign} cause of autorotate`);
         } else {
             let safeIgn = ign;
@@ -149,7 +155,7 @@ async function startBot(ign, tws, secondary = false, fromRotate = false) {
                     },
                     footer: {
                         text: `The "Perfect" Macro Rewrite`,
-                        icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                        icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                     }
                 }, useItemImage ? tempBot.getBot().head : null, false, safeIgn)
             }
@@ -158,7 +164,7 @@ async function startBot(ign, tws, secondary = false, fromRotate = false) {
     })
 }
 
-async function rotate(ign, first = false) {//first means it was called at the start of the program
+async function rotate(ign, first = false) {
     const timings = autoRotate[ign].split(':');
     const firstTime = parseFloat(timings[0].replace(/r|f/g, '')) * 3_600_000;
     const secondTime = parseFloat(timings[1].replace(/r|f/g, '')) * 3_600_000;
@@ -181,11 +187,11 @@ async function rotate(ign, first = false) {//first means it was called at the st
                     }
                 ],
                 thumbnail: {
-                    url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                    url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                 },
                 footer: {
                     text: `The "Perfect" Macro Rewrite`,
-                    icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                    icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                 }
             });
         }, 500)
@@ -210,11 +216,11 @@ async function rotateStart(ign, tws, bot, stop) {
             }
         ],
         thumbnail: {
-            url: bot ? bot.head : 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+            url: bot ? bot.head : 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
         },
         footer: {
             text: `The "Perfect" Macro Rewrite`,
-            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
         }
     }, null, false, ign)
 }
@@ -231,13 +237,13 @@ async function rotateStop(ign, bot, start) {
             }
         ],
         thumbnail: {
-            url: bot ? bot.head : 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+            url: bot ? bot.head : 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
         },
         footer: {
             text: `The "Perfect" Macro Rewrite`,
-            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
         }
-    }, bot ? bot.head : 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888', false, ign)
+    }, bot ? bot.head : 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888', false, ign)
 }
 
 async function crashReport(e) {
@@ -257,7 +263,7 @@ async function crashReport(e) {
         },
         footer: {
             text: `TPM Rewrite`,
-            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
         }
     });
 

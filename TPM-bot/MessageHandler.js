@@ -16,7 +16,7 @@ const uselessMessages = ['items stashed away!', 'CLICK HERE to pick them up!', "
 
 class MessageHandler {
 
-    constructor(ign, bot, socket, state, relist, island, updateSold, updateBought, tpm) {
+    constructor(ign, bot, socket, state, relist, island, updateSold, updateBought, tpm, updateFailed) {
         this.ign = ign;
         this.bot = bot;
         this.coflSocket = socket;
@@ -26,10 +26,11 @@ class MessageHandler {
         this.relist = relist;
         this.updateSold = updateSold;
         this.updateBought = updateBought;
+        this.updateFailed = updateFailed;
         this.tpm = tpm;
-        this.webhookObject = {};//"itemName:pricePaid"
-        this.relistObject = {};//auctionID. Using a different object ensures that it never lists for the wrong price
-        this.soldObject = {};//"itemName:target"
+        this.webhookObject = {};
+        this.relistObject = {};
+        this.soldObject = {};
         this.firstGui = null;
         this.sentCookie = false;
         this.privacySettings = /no regex yet but I don't want it to crash so I'm putting regex/;
@@ -81,7 +82,7 @@ class MessageHandler {
                         },
                         footer: {
                             text: `TPM Rewrite - Purse ${formatNumber(this.bot.getPurse())}`,
-                            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                         }
                     }, this.bot.head, true)
                     this.sentCookie = true;
@@ -141,7 +142,7 @@ class MessageHandler {
                             },
                             footer: {
                                 text: `TPM Rewrite - Found by ${finder} - Purse ${formatNumber(this.bot.getPurse(true) - parseInt(priceNoCommas, 10))}`,
-                                icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                                icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                             }
                         }, useItemImage ? this.bot.head : null, false, this.bot.username)
                     } else {
@@ -159,7 +160,7 @@ class MessageHandler {
                             },
                             footer: {
                                 text: `TPM Rewrite - Found by ${finder} - Purse ${formatNumber(this.bot.getPurse(true) - parseInt(priceNoCommas, 10))}`,
-                                icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                                icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                             }
                         }, useItemImage ? this.bot.head : null, true, this.bot.username)
                     }
@@ -192,7 +193,7 @@ class MessageHandler {
                         if (this.relist.checkRelist(relistProfit, relistFinder, itemName, tag, auctionID, relistTarget, weirdItemName)) {
                             this.relist.listAuction(auctionID, relistTarget, relistProfit, weirdItemName);
                         }
-                    }, 10000)//delay to allow for other flips to get bought
+                    }, 10000)
 
                 }
                 this.coflSocket.sendScoreboard();
@@ -209,7 +210,7 @@ class MessageHandler {
                 const clickEvent = message?.clickEvent?.value;
                 const auctionID = clickEvent.replace('/viewauction ', '').replace(/-/g, '');
                 if (!object) {
-                    this.soldObject[`${stripItemName(item)}:${IHATECLAIMINGTAXES(price)}`] = { auctionID };//allows for cofl link in webhook
+                    this.soldObject[`${stripItemName(item)}:${IHATECLAIMINGTAXES(price)}`] = { auctionID };
                     debug(`added sold object ${stripItemName(item)}:${Math.round(IHATECLAIMINGTAXES(price))} ${auctionID}`);
                 }
                 this.state.setAction();
@@ -221,7 +222,6 @@ class MessageHandler {
                 setTimeout(() => this.bot.getPurse, 5000);
 
             }
-
             const claimedMatch = text.match(claimedRegex);
             if (claimedMatch && this.relist.getGottenReady()) {
                 const price = claimedMatch[1];
@@ -255,11 +255,11 @@ class MessageHandler {
                         },
                         footer: {
                             text: `TPM Rewrite - Purse ${formatNumber(this.bot.getPurse(true) + priceNoCommas)}`,
-                            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                            icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                         }
                     }, useItemImage ? this.bot.head : null, false, this.bot.username)
                     setTimeout(() => {
-                        this.bot.getPurse();//fix incorrect purse after claiming
+                        this.bot.getPurse();
                     }, 4000)
                 }, 1000)
             }
@@ -280,7 +280,7 @@ class MessageHandler {
             const visitMatch = text.match(visitRegex);
             if (visitMatch) {
                 let name = visitMatch[1];
-                if (name.includes(' ')) name = name.split(' ')[1];//remove rank
+                if (name.includes(' ')) name = name.split(' ')[1];
                 name = noColorCodes(name);
                 this.tpm.send(JSON.stringify({
                     type: "visit",
@@ -296,7 +296,7 @@ class MessageHandler {
             const listMatch = text.match(listRegex)
             if (listMatch) {
                 let name = listMatch[1];
-                if (name.includes(' ')) name = name.split(' ')[1];//remove rank
+                if (name.includes(' ')) name = name.split(' ')[1];
                 name = noColorCodes(name);
                 debug("List name", name);
                 if (name !== this.bot.username) this.relist.increaseSlots();
@@ -305,7 +305,7 @@ class MessageHandler {
             const cancelMatch = text.match(cancelRegex);
             if (cancelMatch) {
                 let name = cancelMatch[1];
-                if (name.includes(' ')) name = name.split(' ')[1];//remove rank
+                if (name.includes(' ')) name = name.split(' ')[1];
                 name = noColorCodes(name);
                 debug("cancel name", name);
                 if (name !== this.bot.username) this.relist.declineSoldAuction();
@@ -314,7 +314,7 @@ class MessageHandler {
             const collectedMatch = text.match(collectedRegex);
             if (collectedMatch) {
                 let name = collectedMatch[1];
-                if (name.includes(' ')) name = name.split(' ')[1];//remove rank
+                if (name.includes(' ')) name = name.split(' ')[1];
                 name = noColorCodes(name);
                 debug("collected name", name);
                 if (name !== this.bot.username) this.relist.declineSoldAuction();
@@ -381,12 +381,12 @@ class MessageHandler {
         }
     }
 
-    setBuySpeed(BINView) {//for autobuy
+    setBuySpeed(BINView) {
         this.firstGui = BINView;
     }
 
     objectAdd(weirdItemName, price, target, profit, auctionID, bed, finder, itemName, tag, volume, profitPerc) {
-        const soldPrice = Math.round(IHATECLAIMINGTAXES(this.relist.roundNumber(this.relist.calcPriceCut(target) * target / 100)));//wow this is ugly
+        const soldPrice = Math.round(IHATECLAIMINGTAXES(this.relist.roundNumber(this.relist.calcPriceCut(target) * target / 100)));
         debug(`Sold object added: ${weirdItemName}:${soldPrice}`);
 
         this.soldObject[`${weirdItemName}:${soldPrice}`] = {

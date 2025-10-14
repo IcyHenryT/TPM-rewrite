@@ -12,7 +12,7 @@ if (useSkip && delay < 150) delay = 150;
 
 class AutoBuy {
 
-    constructor(bot, WebhookManager, coflSocket, ign, state, relist, bank) {
+    constructor(bot, WebhookManager, coflSocket, ign, state, relist, bank, updateFailed) {
         this.bot = bot;
         this.webhook = WebhookManager;
         this.coflSocket = coflSocket;
@@ -21,6 +21,7 @@ class AutoBuy {
         this.state = state;
         this.bank = bank;
         this.relist = relist;
+        this.updateFailed = updateFailed;
         this.recentProfit = 0;
         this.recentPercent = 0;
         this.recentFinder = 0;
@@ -31,7 +32,7 @@ class AutoBuy {
         this.bedFailed = false;
         this.currentOpen = null;
         this.packets = getPackets(ign);
-        this.currentlyTimingBed = false;//failsafe
+        this.currentlyTimingBed = false;
         this.setFromCoflSocket = this.setFromCoflSocket.bind(this);
         relist.giveSetCoflSocket(this.setFromCoflSocket)
 
@@ -87,7 +88,7 @@ class AutoBuy {
                 switch (item) {
                     case "bed":
                         logmc(`§6[§bTPM§6]§6 Found a bed!`)
-                        if (!bedSpam && !this.bedFailed && !this.currentlyTimingBed) this.bedFailed = true;//Sometimes beds aren't timed idk why but this should be a good failsafe
+                        if (!bedSpam && !this.bedFailed && !this.currentlyTimingBed) this.bedFailed = true;
                         this.initBedSpam();
                         break;
                     case null:
@@ -145,6 +146,7 @@ class AutoBuy {
                         break;
                     case "poisonous_potato":
                         logmc(`§6[§bTPM§6]§c Too poor to buy it :(`);
+                        this.updateFailed();
                         bot.betterWindowClose();
                         state.set(null);
                         state.setAction(firstGui);
@@ -153,12 +155,12 @@ class AutoBuy {
                         if (state.get() === 'delisting') {
                             this.bot.betterClick(33);
                             debug(`clicked delist`);
-                        } else if (state.get() == "expired") {//This means that it didn't actually expire but it thinks that it did
+                        } else if (state.get() == "expired") {
                             const slot = bot.currentWindow.slots[13];
                             const lore = getSlotLore(slot);
                             const endsInTime = lore.find(line => line.includes('Ends in:'));
                             const endTime = normalTime(endsInTime);
-                            setTimeout(() => {//Remove auctions when they expire
+                            setTimeout(() => {
                                 state.queueAdd(this.relist.getItemUuid(slot), "expired", 4);
                             }, endTime)
                             bot.betterWindowClose();
@@ -178,7 +180,7 @@ class AutoBuy {
                                 },
                                 footer: {
                                     text: `TPM Rewrite`,
-                                    icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                                    icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                                 }
                             }, useItemImage ? bot.head : null, false, bot.username);
                         } else {
@@ -209,12 +211,12 @@ class AutoBuy {
                 logmc(`§6[§bTPM§6] §3Confirm at ${confirmAt}ms`);
                 if (!this.recentlySkipped) bot.betterClick(11, 0, 0);
                 await bot.waitForTicks(3);
-                while (getWindowName(bot.currentWindow) === 'Confirm Purchase') {//Sometimes click doesn't register
+                while (getWindowName(bot.currentWindow) === 'Confirm Purchase') {
                     bot.betterClick(11, 0, 0);
                     await bot.waitForTicks(5);
                 }
                 state.set(null);
-            } else if (windowName === '{"italic":false,"extra":[{"text":"Auction View"}],"text":""}') {//failsafe if they have normal auctions turned on
+            } else if (windowName === '{"italic":false,"extra":[{"text":"Auction View"}],"text":""}') {
                 let item = (await this.itemLoad(29))?.name;
                 if (item === "gold_nugget" && state.get() == 'expired') {
                     bot.betterClick(29);
@@ -237,8 +239,8 @@ class AutoBuy {
             const windowCheck = !bot.currentWindow;
             const ready = windowCheck && lastUpdated && stateCheck;
             let auctionID = data.id;
-            if (ready) bot._client.chat(`/viewauction ${auctionID}`);//Put this earlier so that it doesn't get slowed down (but it's kinda ugly :( )
-            const { finder, vol, purchaseAt, target, startingBid, tag, itemName, profitPerc } = data;//I hate this :(
+            if (ready) bot._client.chat(`/viewauction ${auctionID}`);
+            const { finder, vol, purchaseAt, target, startingBid, tag, itemName, profitPerc } = data;
             let weirdItemName = stripItemName(itemName);
             let profit = IHATETAXES(target) - startingBid;
             let ending = new Date(normalizeDate(purchaseAt)).getTime();
@@ -288,7 +290,7 @@ class AutoBuy {
                     },
                     footer: {
                         text: `TPM Rewrite - Found by ${nicerFinders(finder)}`,
-                        icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
+                        icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                     }
                 }, bot.head, false, "TPM", null, true)
             }
@@ -331,8 +333,7 @@ class AutoBuy {
         });
     }
 
-    //ok so the reason we have a fake price is so that I don't have to recode the whole price thing from queue yk yk
-    openExternalFlip(ahid, profit, finder, itemname, tag, price = null, fakePrice = null) {//queue and buy from discord (maybe webpage in future?) ONLY CALL IF READY!!!
+    openExternalFlip(ahid, profit, finder, itemname, tag, price = null, fakePrice = null) {
         this.bot.chat(`/viewauction ${ahid}`);
         this.recentFinder = finder;
         this.recentProfit = profit;
@@ -341,7 +342,7 @@ class AutoBuy {
         this.recentName = itemname;
         this.recentlySkipped = false;
 
-        if (price) {//For queue flips, don't include price
+        if (price) {
             this.webhook.objectAdd(stripItemName(itemname), price, null, null, ahid, 'EXTERNAL', finder, itemname, tag);
             this.recentPercent = profit / price * 100;
             this.recentPrice = price;
@@ -399,7 +400,7 @@ class AutoBuy {
                 }
                 return;
             }
-            if (item == "gold_nugget") {//idk man sometimes it happens
+            if (item == "gold_nugget") {
                 this.bot.betterClick(31, 0, 0);
                 undefinedCount++
                 return;
@@ -448,10 +449,10 @@ class AutoBuy {
                         if (!this.relist.externalListCheck()) return;
                         const { relist: relistObject } = this.webhook.getObjects();
                         try {
-                            var { weirdItemName, pricePaid, tag } = relistObject[auctionID]; //ew var
+                            var { weirdItemName, pricePaid, tag } = relistObject[auctionID];
                         } catch {
-                            var weirdItemName = auctionID; //ew var
-                            var pricePaid = 0; //ew var
+                            var weirdItemName = auctionID;
+                            var pricePaid = 0;
                         }
                         let profit = IHATETAXES(price) - pricePaid;
                         this.relist.listAuction(auctionID, price, profit, weirdItemName, tag, time || null, true, inv);
@@ -462,9 +463,9 @@ class AutoBuy {
                         const { auctionID, itemUuid } = current.action;
                         const { relist: relistObject } = this.webhook.getObjects();
                         try {
-                            var { weirdItemName } = relistObject[auctionID]; //ew var
+                            var { weirdItemName } = relistObject[auctionID];
                         } catch {
-                            var weirdItemName = auctionID; //ew var
+                            var weirdItemName = auctionID;
                         }
                         this.relist.delistAuction(itemUuid, auctionID, weirdItemName);
                         break;
@@ -473,16 +474,15 @@ class AutoBuy {
                         this.state.set('DEAAAATHHH');
                         debug('dying', this.bot.username);
                         this.bot.quit();
-                        // this.coflSocket.closeSocket();
                         this.coflSocket.kill();
                         removeIgn(this.ign);
                         this.bot.removeAllListeners();
                         try {
-                            await betterOnce(this.bot, "end");//Ok so the await here like lowkey breaks everyything so I remove the old queue before
+                            await betterOnce(this.bot, "end");
                         } catch (e) {
                             debug(`Error disconnecting`, e);
                             for (let i = 0; i < 10; i++) {
-                                this.bot.end();//just spam it!
+                                this.bot.end();
                             }
                         }
                         logmc(`§6[§bTPM§6] §c${this.ign} is now dead. May he rest in peace.`)
