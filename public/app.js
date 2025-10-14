@@ -440,7 +440,31 @@ async function saveConfig() {
         body: JSON.stringify(newConfig)
     });
 
-    alert('Config saved! Restart TPM to apply changes.');
+    alert('Config saved! Click "Restart Bot" to apply changes.');
+}
+
+async function restartBot() {
+    if (!confirm('Are you sure you want to restart TPM? This will disconnect temporarily.')) {
+        return;
+    }
+
+    try {
+        await fetch('/api/restart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        alert('TPM is restarting... The page will reload in 5 seconds.');
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 5000);
+    } catch (e) {
+        console.log('Server restarting...');
+        setTimeout(() => {
+            window.location.reload();
+        }, 5000);
+    }
 }
 
 function handleInventoryData(data) {
@@ -567,6 +591,32 @@ function addLogLine(log) {
     }
 }
 
+function loadInventoryForCurrentBot() {
+    if (!currentBot) {
+        document.getElementById('inventory-container').innerHTML = '<div class="loading">Please select a bot first</div>';
+        return;
+    }
+
+    document.getElementById('inventory-container').innerHTML = '<div class="loading">Loading inventory...</div>';
+    ws.send(JSON.stringify({
+        type: 'requestInventory',
+        username: currentBot
+    }));
+}
+
+function loadAuctionsForCurrentBot() {
+    if (!currentBot) {
+        document.getElementById('auctions-container').innerHTML = '<div class="loading">Please select a bot first</div>';
+        return;
+    }
+
+    document.getElementById('auctions-container').innerHTML = '<div class="loading">Loading auctions...</div>';
+    ws.send(JSON.stringify({
+        type: 'requestAuctions',
+        username: currentBot
+    }));
+}
+
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -579,6 +629,8 @@ document.querySelectorAll('.tab').forEach(tab => {
         if (tabName === 'analytics') loadAnalytics();
         if (tabName === 'history') loadFlipHistory();
         if (tabName === 'info') loadPingStats();
+        if (tabName === 'inventory') loadInventoryForCurrentBot();
+        if (tabName === 'auctions') loadAuctionsForCurrentBot();
     });
 });
 
@@ -587,33 +639,15 @@ document.getElementById('bot-select').addEventListener('change', (e) => {
 });
 
 document.getElementById('refresh-inventory').addEventListener('click', () => {
-    if (!currentBot) {
-        alert('Please select a bot first');
-        return;
-    }
-
-    document.getElementById('inventory-container').innerHTML = '<div class="loading">Loading inventory...</div>';
-    ws.send(JSON.stringify({
-        type: 'requestInventory',
-        username: currentBot
-    }));
+    loadInventoryForCurrentBot();
 });
 
 document.getElementById('refresh-auctions').addEventListener('click', () => {
-    if (!currentBot) {
-        alert('Please select a bot first');
-        return;
-    }
-
-    document.getElementById('auctions-container').innerHTML = '<div class="loading">Loading auctions...</div>';
-    ws.send(JSON.stringify({
-        type: 'requestAuctions',
-        username: currentBot
-    }));
+    loadAuctionsForCurrentBot();
 });
 
 document.getElementById('save-config').addEventListener('click', saveConfig);
-document.getElementById('reload-config').addEventListener('click', loadConfig);
+document.getElementById('restart-bot').addEventListener('click', restartBot);
 
 document.getElementById('history-search').addEventListener('input', (e) => {
     filterHistory(e.target.value);

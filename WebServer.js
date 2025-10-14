@@ -102,6 +102,17 @@ class WebServer {
             return;
         }
 
+        if (url.pathname === '/api/restart' && req.method === 'POST') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, message: 'Server restarting...' }));
+
+            setTimeout(() => {
+                console.log('Restarting TPM server...');
+                process.exit(0);
+            }, 1000);
+            return;
+        }
+
         if (url.pathname === '/api/analytics') {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(this.getAnalyticsData()));
