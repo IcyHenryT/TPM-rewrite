@@ -3,8 +3,42 @@ let reconnectInterval;
 let currentBot = null;
 let inventoryData = null;
 let auctionsData = null;
+let authenticated = false;
+let profitChart = null;
+let finderChart = null;
+let configData = null;
+
+document.getElementById('pin-submit').addEventListener('click', checkPin);
+document.getElementById('pin-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') checkPin();
+});
+
+async function checkPin() {
+    const pin = document.getElementById('pin-input').value;
+    const response = await fetch('/api/check-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+    });
+    const result = await response.json();
+
+    if (result.valid) {
+        authenticated = true;
+        document.getElementById('pin-screen').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        connect();
+        loadConfig();
+    } else {
+        document.getElementById('pin-error').textContent = 'Invalid PIN';
+        setTimeout(() => {
+            document.getElementById('pin-error').textContent = '';
+        }, 2000);
+    }
+}
 
 function connect() {
+    if (!authenticated) return;
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(`${protocol}//${window.location.host}`);
 
@@ -29,6 +63,9 @@ function connect() {
                     if (message.data.logs && message.data.logs.length > 0) {
                         message.data.logs.forEach(log => addLogLine(log));
                     }
+                    loadAnalytics();
+                    loadFlipHistory();
+                    loadPingStats();
                     break;
                 case 'update':
                     updateBots(message.data);
@@ -42,6 +79,24 @@ function connect() {
                     break;
                 case 'auctionsData':
                     handleAuctionsData(message.data);
+                    break;
+                case 'autoLoadInventory':
+                    if (message.data.username) {
+                        currentBot = message.data.username;
+                        document.getElementById('bot-select').value = currentBot;
+                        ws.send(JSON.stringify({
+                            type: 'requestInventory',
+                            username: currentBot
+                        }));
+                    }
+                    break;
+                case 'autoLoadAuctions':
+                    if (message.data.username) {
+                        ws.send(JSON.stringify({
+                            type: 'requestAuctions',
+                            username: currentBot
+                        }));
+                    }
                     break;
             }
         } catch (e) {
@@ -156,6 +211,236 @@ function updateBotSelector(bots) {
         select.value = bots[0].name;
         currentBot = bots[0].name;
     }
+}
+
+async function loadAnalytics() {
+    const response = await fetch('/api/analytics');
+    const data = await response.json();
+
+    const profitCtx = document.getElementById('profit-chart').getContext('2d');
+    const finderCtx = document.getElementById('finder-chart').getContext('2d');
+
+    const hours = Object.keys(data.hourlyData).sort((a, b) => a - b);
+    const profitData = hours.map(h => data.hourlyData[h].profit);
+
+    if (profitChart) profitChart.destroy();
+    profitChart = new Chart(profitCtx, {
+        type: 'line',
+        data: {
+            labels: hours.map(h => `${h}:00`),
+            datasets: [{
+                label: 'Hourly Profit',
+                data: profitData,
+                borderColor: '#00ff00',
+                backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#fff' } }
+            },
+            scales: {
+                y: {
+                    ticks: { color: '#888', callback: (value) => formatNumber(value) },
+                    grid: { color: '#222' }
+                },
+                x: {
+                    ticks: { color: '#888' },
+                    grid: { color: '#222' }
+                }
+            }
+        }
+    });
+
+    const finders = Object.keys(data.finderStats);
+    const finderProfits = finders.map(f => data.finderStats[f].profit);
+
+    if (finderChart) finderChart.destroy();
+    finderChart = new Chart(finderCtx, {
+        type: 'bar',
+        data: {
+            labels: finders,
+            datasets: [{
+                label: 'Profit by Finder',
+                data: finderProfits,
+                backgroundColor: [
+                    '#ff6384', '#36a2eb', '#cc65fe', '#ffce56',
+                    '#4bc0c0', '#ff9f40', '#ff6384', '#c9cbcf'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    ticks: { color: '#888', callback: (value) => formatNumber(value) },
+                    grid: { color: '#222' }
+                },
+                x: {
+                    ticks: { color: '#888' },
+                    grid: { color: '#222' }
+                }
+            }
+        }
+    });
+}
+
+async function loadFlipHistory() {
+    const response = await fetch('/api/flip-history');
+    const history = await response.json();
+    displayFlipHistory(history);
+}
+
+function displayFlipHistory(history) {
+    const container = document.getElementById('history-container');
+
+    if (history.length === 0) {
+        container.innerHTML = '<div class="loading">No flip history yet</div>';
+        return;
+    }
+
+    const table = document.createElement('table');
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Bot</th>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Profit</th>
+                <th>Finder</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${history.map(flip => `
+                <tr>
+                    <td>${new Date(flip.timestamp).toLocaleTimeString()}</td>
+                    <td>${flip.username}</td>
+                    <td>${flip.itemName.replace(/§./g, '')}</td>
+                    <td>${formatNumber(flip.price)}</td>
+                    <td class="${flip.profit > 0 ? 'positive' : 'negative'}">${formatNumber(flip.profit)}</td>
+                    <td>${flip.finder}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+
+    container.innerHTML = '';
+    container.appendChild(table);
+}
+
+async function loadPingStats() {
+    const response = await fetch('/api/ping-stats');
+    const stats = await response.json();
+
+    const container = document.getElementById('info-container');
+    const grid = document.createElement('div');
+    grid.className = 'info-grid';
+
+    for (const [bot, data] of Object.entries(stats)) {
+        const card = document.createElement('div');
+        card.className = 'info-card';
+        card.innerHTML = `
+            <h3>${bot}</h3>
+            <div class="info-stats">
+                <div class="info-stat">
+                    <span class="label">Cofl Ping:</span>
+                    <span class="value">${data.coflPing}</span>
+                </div>
+                <div class="info-stat">
+                    <span class="label">Hypixel Ping:</span>
+                    <span class="value">${data.hypixelPing}</span>
+                </div>
+                <div class="info-stat">
+                    <span class="label">Cofl Delay:</span>
+                    <span class="value">${data.coflDelay}</span>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    }
+
+    container.innerHTML = '';
+    container.appendChild(grid);
+}
+
+async function loadConfig() {
+    const response = await fetch('/api/config');
+    configData = await response.json();
+    displayConfig(configData);
+}
+
+function displayConfig(config) {
+    const editor = document.getElementById('config-editor');
+
+    const basicSettings = ['igns', 'discordID', 'webhook', 'webPort', 'webPin', 'delay', 'waittime'];
+    const relistSettings = ['relist', 'useCookie', 'autoCookie', 'percentOfTarget', 'listHours'];
+
+    let html = '<div class="config-group"><h3>Basic Settings</h3>';
+    basicSettings.forEach(key => {
+        if (config[key] !== undefined) {
+            const value = Array.isArray(config[key]) ? config[key].join(', ') : config[key];
+            html += `
+                <div class="config-item">
+                    <div class="config-label">${key}</div>
+                    <input type="text" class="config-input" data-key="${key}" value="${value}">
+                </div>
+            `;
+        }
+    });
+    html += '</div>';
+
+    html += '<div class="config-group"><h3>Relist Settings</h3>';
+    relistSettings.forEach(key => {
+        if (config[key] !== undefined) {
+            const value = Array.isArray(config[key]) ? config[key].join(', ') :
+                typeof config[key] === 'boolean' ? config[key] : config[key];
+            html += `
+                <div class="config-item">
+                    <div class="config-label">${key}</div>
+                    <input type="text" class="config-input" data-key="${key}" value="${value}">
+                </div>
+            `;
+        }
+    });
+    html += '</div>';
+
+    editor.innerHTML = html;
+}
+
+async function saveConfig() {
+    const inputs = document.querySelectorAll('.config-input');
+    const newConfig = { ...configData };
+
+    inputs.forEach(input => {
+        const key = input.dataset.key;
+        let value = input.value;
+
+        if (value.includes(',')) {
+            value = value.split(',').map(v => v.trim());
+        } else if (value === 'true' || value === 'false') {
+            value = value === 'true';
+        } else if (!isNaN(value) && value !== '') {
+            value = Number(value);
+        }
+
+        newConfig[key] = value;
+    });
+
+    await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConfig)
+    });
+
+    alert('Config saved! Restart TPM to apply changes.');
 }
 
 function handleInventoryData(data) {
@@ -290,6 +575,10 @@ document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.add('active');
         const tabName = tab.dataset.tab;
         document.getElementById(`${tabName}-tab`).classList.add('active');
+
+        if (tabName === 'analytics') loadAnalytics();
+        if (tabName === 'history') loadFlipHistory();
+        if (tabName === 'info') loadPingStats();
     });
 });
 
@@ -323,4 +612,38 @@ document.getElementById('refresh-auctions').addEventListener('click', () => {
     }));
 });
 
-connect();
+document.getElementById('save-config').addEventListener('click', saveConfig);
+document.getElementById('reload-config').addEventListener('click', loadConfig);
+
+document.getElementById('history-search').addEventListener('input', (e) => {
+    filterHistory(e.target.value);
+});
+
+document.getElementById('history-filter').addEventListener('change', (e) => {
+    filterHistoryByType(e.target.value);
+});
+
+async function filterHistory(search) {
+    const response = await fetch('/api/flip-history');
+    const history = await response.json();
+    const filtered = history.filter(flip =>
+        flip.itemName.toLowerCase().includes(search.toLowerCase()) ||
+        flip.username.toLowerCase().includes(search.toLowerCase()) ||
+        flip.finder.toLowerCase().includes(search.toLowerCase())
+    );
+    displayFlipHistory(filtered);
+}
+
+async function filterHistoryByType(type) {
+    const response = await fetch('/api/flip-history');
+    const history = await response.json();
+    let filtered = history;
+
+    if (type === 'profit') {
+        filtered = history.filter(flip => flip.profit > 0);
+    } else if (type === 'loss') {
+        filtered = history.filter(flip => flip.profit <= 0);
+    }
+
+    displayFlipHistory(filtered);
+}

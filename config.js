@@ -41,6 +41,9 @@ const defaultConfig = `{
     //Web interface port
     "webPort": 3000,
 
+    //Web interface PIN code
+    "webPin": "0000",
+
     //Delay between actions. For example, opening flips
     "delay": 250,
 

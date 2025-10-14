@@ -90,6 +90,8 @@ testIgn();
         }
     }, avatar, false, webhookName)
 
+    monitorFlips();
+
 })();
 
 async function destroyBot(ign, secondary = true) {
@@ -244,6 +246,28 @@ async function rotateStop(ign, bot, start) {
             icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
         }
     }, bot ? bot.head : 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14879f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888', false, ign)
+}
+
+function monitorFlips() {
+    setInterval(() => {
+        for (const [name, botInstance] of Object.entries(bots)) {
+            const lastProfit = botInstance.bought[botInstance.bought.length - 1];
+            if (lastProfit && typeof lastProfit === 'number' && lastProfit > 0) {
+                const { relist: relistObject } = botInstance.webhook.getObjects();
+                const lastFlip = Object.values(relistObject).pop();
+                if (lastFlip) {
+                    webServer.addFlip(
+                        name,
+                        lastFlip.itemName || 'Unknown',
+                        lastProfit,
+                        lastFlip.finder || 'Unknown',
+                        lastFlip.pricePaid || 0,
+                        lastFlip.tag || 'UNKNOWN'
+                    );
+                }
+            }
+        }
+    }, 5000);
 }
 
 async function crashReport(e) {

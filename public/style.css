@@ -11,6 +11,77 @@ body {
     line-height: 1.6;
 }
 
+.pin-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.pin-container {
+    text-align: center;
+}
+
+.pin-container h1 {
+    font-size: 32px;
+    margin-bottom: 40px;
+    letter-spacing: 4px;
+}
+
+.pin-input-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.pin-input {
+    background: #111;
+    border: 2px solid #333;
+    color: #fff;
+    padding: 15px 20px;
+    font-size: 18px;
+    width: 250px;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.pin-input:focus {
+    outline: none;
+    border-color: #666;
+}
+
+.pin-submit {
+    background: #222;
+    border: 2px solid #333;
+    color: #fff;
+    padding: 15px 30px;
+    font-size: 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+}
+
+.pin-submit:hover {
+    background: #333;
+    border-color: #666;
+}
+
+.pin-error {
+    color: #f00;
+    margin-top: 20px;
+    min-height: 20px;
+}
+
+.main-content {
+    display: block;
+}
+
 .container {
     max-width: 1800px;
     margin: 0 auto;
@@ -76,18 +147,20 @@ h2 {
     gap: 2px;
     border-bottom: 1px solid #333;
     margin-bottom: 30px;
+    overflow-x: auto;
 }
 
 .tab {
     background: #111;
     border: none;
     color: #666;
-    padding: 15px 30px;
+    padding: 15px 20px;
     font-size: 12px;
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 1px;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .tab:hover {
@@ -164,6 +237,69 @@ h2 {
     font-family: 'Courier New', monospace;
     font-size: 16px;
     font-weight: 600;
+}
+
+.chart-container {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    padding: 20px;
+    margin-bottom: 30px;
+    height: 400px;
+}
+
+.history-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+#history-search {
+    flex: 1;
+    background: #111;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+#history-filter {
+    background: #111;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.history-table {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    overflow-x: auto;
+}
+
+.history-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #222;
+}
+
+.history-table th {
+    background: #111;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: 1px;
+}
+
+.history-table td {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
 }
 
 .items-grid {
@@ -280,6 +416,108 @@ h2 {
     margin: 2px 0;
 }
 
+.info-container {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    padding: 20px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.info-card {
+    border: 1px solid #333;
+    padding: 15px;
+}
+
+.info-card h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.info-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.info-stat .label {
+    color: #888;
+}
+
+.info-stat .value {
+    font-family: 'Courier New', monospace;
+    color: #fff;
+}
+
+.config-controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.config-editor {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    padding: 20px;
+    min-height: 600px;
+}
+
+.config-group {
+    margin-bottom: 30px;
+}
+
+.config-group h3 {
+    font-size: 14px;
+    margin-bottom: 15px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #222;
+}
+
+.config-item:last-child {
+    border-bottom: none;
+}
+
+.config-label {
+    font-size: 13px;
+    color: #888;
+}
+
+.config-input {
+    background: #111;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 13px;
+    width: 200px;
+}
+
+.config-input:focus {
+    outline: none;
+    border-color: #666;
+}
+
 .console {
     background: #0a0a0a;
     border: 1px solid #222;
@@ -355,5 +593,9 @@ h2 {
     .item-image {
         width: 48px;
         height: 48px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
     }
 }

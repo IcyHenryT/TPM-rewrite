@@ -4,6 +4,7 @@ const path = require('path');
 const WebSocket = require('ws');
 const { formatNumber, getSlotLore, noColorCodes, onlyNumbers, normalTime, sleep } = require('./TPM-bot/Utils.js');
 const axios = require('axios');
+const { config, updateConfig } = require('./config.js');
 
 class WebServer {
     constructor(port, bots) {
@@ -14,6 +15,9 @@ class WebServer {
         this.clients = new Set();
         this.logBuffer = [];
         this.maxLogs = 500;
+        this.flipHistory = [];
+        this.maxHistory = 1000;
+        this.autoLoadedBots = new Set();
     }
 
     start() {
@@ -57,7 +61,88 @@ class WebServer {
                 type: 'update',
                 data: this.getBotsData()
             });
+            this.checkAutoLoad();
         }, 1000);
+    }
+
+    async handleRequest(req, res) {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+
+        if (url.pathname === '/api/check-pin' && req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                const { pin } = JSON.parse(body);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ valid: pin === config.webPin }));
+            });
+            return;
+        }
+
+        if (url.pathname === '/api/config' && req.method === 'GET') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(config));
+            return;
+        }
+
+        if (url.pathname === '/api/config' && req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                try {
+                    const newConfig = JSON.parse(body);
+                    updateConfig(newConfig);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true }));
+                } catch (e) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: e.message }));
+                }
+            });
+            return;
+        }
+
+        if (url.pathname === '/api/analytics') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(this.getAnalyticsData()));
+            return;
+        }
+
+        if (url.pathname === '/api/flip-history') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(this.flipHistory));
+            return;
+        }
+
+        if (url.pathname === '/api/ping-stats') {
+            const stats = await this.getPingStats();
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(stats));
+            return;
+        }
+
+        const filePath = url.pathname === '/' ? '/index.html' : url.pathname;
+        const fullPath = path.join(__dirname, 'public', filePath);
+        const extname = path.extname(fullPath);
+
+        const mimeTypes = {
+            '.html': 'text/html',
+            '.css': 'text/css',
+            '.js': 'application/javascript',
+            '.json': 'application/json'
+        };
+
+        const contentType = mimeTypes[extname] || 'text/plain';
+
+        fs.readFile(fullPath, (err, content) => {
+            if (err) {
+                res.writeHead(404);
+                res.end('404 Not Found');
+            } else {
+                res.writeHead(200, { 'Content-Type': contentType });
+                res.end(content);
+            }
+        });
     }
 
     async handleWebSocketMessage(data, ws) {
@@ -197,37 +282,6 @@ class WebServer {
         return auctionSlots;
     }
 
-    handleRequest(req, res) {
-        const url = req.url === '/' ? '/index.html' : req.url;
-        const filePath = path.join(__dirname, 'public', url);
-        const extname = path.extname(filePath);
-
-        const mimeTypes = {
-            '.html': 'text/html',
-            '.css': 'text/css',
-            '.js': 'application/javascript',
-            '.json': 'application/json'
-        };
-
-        const contentType = mimeTypes[extname] || 'text/plain';
-
-        if (url === '/api/bots') {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(this.getBotsData()));
-            return;
-        }
-
-        fs.readFile(filePath, (err, content) => {
-            if (err) {
-                res.writeHead(404);
-                res.end('404 Not Found');
-            } else {
-                res.writeHead(200, { 'Content-Type': contentType });
-                res.end(content);
-            }
-        });
-    }
-
     getBotsData() {
         const botsData = [];
 
@@ -261,11 +315,68 @@ class WebServer {
                 purchasesPerHour: purchasesPerHour,
                 userFlips: userFlips,
                 state: botInstance.state.get(),
-                uptime: timeSpan
+                uptime: timeSpan,
+                onIsland: botInstance.island?.onIslandCheck?.() || false
             });
         }
 
         return botsData;
+    }
+
+    getAnalyticsData() {
+        const hourlyData = {};
+        const finderStats = {};
+
+        this.flipHistory.forEach(flip => {
+            const hour = new Date(flip.timestamp).getHours();
+            if (!hourlyData[hour]) {
+                hourlyData[hour] = { profit: 0, count: 0 };
+            }
+            hourlyData[hour].profit += flip.profit;
+            hourlyData[hour].count++;
+
+            if (!finderStats[flip.finder]) {
+                finderStats[flip.finder] = { profit: 0, count: 0 };
+            }
+            finderStats[flip.finder].profit += flip.profit;
+            finderStats[flip.finder].count++;
+        });
+
+        return {
+            hourlyData,
+            finderStats,
+            totalFlips: this.flipHistory.length
+        };
+    }
+
+    async getPingStats() {
+        const { TheBig3 } = require('./TPM-bot/Utils.js');
+        const stats = {};
+
+        const promises = Object.entries(this.bots).map(async ([name, botInstance]) => {
+            try {
+                const bot = botInstance.getBot();
+                const coflSocket = botInstance.coflSocket;
+                const ws = coflSocket.getWs();
+                const handleCommand = coflSocket.handleCommand.bind(coflSocket);
+
+                const pingData = await TheBig3(bot, handleCommand, ws);
+                stats[name] = {
+                    coflPing: pingData.coflPing,
+                    hypixelPing: pingData.hypixelPing,
+                    coflDelay: pingData.delay
+                };
+            } catch (e) {
+                stats[name] = {
+                    coflPing: 'Error',
+                    hypixelPing: 'Error',
+                    coflDelay: 'Error'
+                };
+            }
+        });
+
+        await Promise.all(promises);
+        return stats;
     }
 
     addLog(message) {
@@ -281,6 +392,49 @@ class WebServer {
             type: 'log',
             data: logEntry
         });
+    }
+
+    addFlip(username, itemName, profit, finder, price, tag) {
+        const flip = {
+            timestamp: Date.now(),
+            username,
+            itemName,
+            profit,
+            finder,
+            price,
+            tag
+        };
+
+        this.flipHistory.unshift(flip);
+        if (this.flipHistory.length > this.maxHistory) {
+            this.flipHistory.pop();
+        }
+    }
+
+    checkAutoLoad() {
+        for (const [name, botInstance] of Object.entries(this.bots)) {
+            const bot = botInstance.getBot();
+            const onIsland = botInstance.island?.onIslandCheck?.() || false;
+            const botReady = botInstance.relist?.getGottenReady?.() || false;
+
+            if (onIsland && botReady && !this.autoLoadedBots.has(name)) {
+                this.autoLoadedBots.add(name);
+
+                setTimeout(() => {
+                    this.broadcast({
+                        type: 'autoLoadInventory',
+                        data: { username: name }
+                    });
+                }, 2000);
+
+                setTimeout(() => {
+                    this.broadcast({
+                        type: 'autoLoadAuctions',
+                        data: { username: name }
+                    });
+                }, 4000);
+            }
+        }
     }
 
     broadcast(data) {

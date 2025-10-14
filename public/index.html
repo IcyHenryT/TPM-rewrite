@@ -5,53 +5,117 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TPM Control Panel</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<div class="container">
-    <header>
+<div id="pin-screen" class="pin-screen">
+    <div class="pin-container">
         <h1>TPM CONTROL PANEL</h1>
-        <div class="bot-selector">
-            <select id="bot-select">
-                <option value="">Select Bot</option>
-            </select>
-            <button id="refresh-inventory" class="action-btn">Refresh Inventory</button>
-            <button id="refresh-auctions" class="action-btn">Refresh Auctions</button>
+        <div class="pin-input-wrapper">
+            <input type="password" id="pin-input" class="pin-input" placeholder="Enter PIN" maxlength="20">
+            <button id="pin-submit" class="pin-submit">UNLOCK</button>
         </div>
-    </header>
-
-    <div class="tabs">
-        <button class="tab active" data-tab="bots">Statistics</button>
-        <button class="tab" data-tab="inventory">Inventory</button>
-        <button class="tab" data-tab="auctions">Auctions</button>
-        <button class="tab" data-tab="console">Console</button>
+        <div id="pin-error" class="pin-error"></div>
     </div>
+</div>
 
-    <div class="content">
-        <div class="tab-content active" id="bots-tab">
-            <div class="bots-section">
-                <h2>ACTIVE BOTS</h2>
-                <div id="bots-container"></div>
+<div id="main-content" class="main-content" style="display: none;">
+    <div class="container">
+        <header>
+            <h1>TPM CONTROL PANEL</h1>
+            <div class="bot-selector">
+                <select id="bot-select">
+                    <option value="">Select Bot</option>
+                </select>
+                <button id="refresh-inventory" class="action-btn">Refresh Inventory</button>
+                <button id="refresh-auctions" class="action-btn">Refresh Auctions</button>
             </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="bots">Statistics</button>
+            <button class="tab" data-tab="analytics">Analytics</button>
+            <button class="tab" data-tab="history">Flip History</button>
+            <button class="tab" data-tab="inventory">Inventory</button>
+            <button class="tab" data-tab="auctions">Auctions</button>
+            <button class="tab" data-tab="info">Info</button>
+            <button class="tab" data-tab="config">Config</button>
+            <button class="tab" data-tab="console">Console</button>
         </div>
 
-        <div class="tab-content" id="inventory-tab">
-            <div class="inventory-section">
-                <h2>INVENTORY</h2>
-                <div id="inventory-container" class="items-grid"></div>
+        <div class="content">
+            <div class="tab-content active" id="bots-tab">
+                <div class="bots-section">
+                    <h2>ACTIVE BOTS</h2>
+                    <div id="bots-container"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="auctions-tab">
-            <div class="auctions-section">
-                <h2>MY AUCTIONS</h2>
-                <div id="auctions-container" class="items-grid"></div>
+            <div class="tab-content" id="analytics-tab">
+                <div class="analytics-section">
+                    <h2>PROFIT ANALYTICS</h2>
+                    <div class="chart-container">
+                        <canvas id="profit-chart"></canvas>
+                    </div>
+                    <h2>FINDER PERFORMANCE</h2>
+                    <div class="chart-container">
+                        <canvas id="finder-chart"></canvas>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="tab-content" id="console-tab">
-            <div class="console-section">
-                <h2>CONSOLE</h2>
-                <div id="console" class="console"></div>
+            <div class="tab-content" id="history-tab">
+                <div class="history-section">
+                    <h2>FLIP HISTORY</h2>
+                    <div class="history-controls">
+                        <input type="text" id="history-search" placeholder="Search...">
+                        <select id="history-filter">
+                            <option value="all">All</option>
+                            <option value="profit">Profitable</option>
+                            <option value="loss">Loss</option>
+                        </select>
+                    </div>
+                    <div id="history-container" class="history-table"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="inventory-tab">
+                <div class="inventory-section">
+                    <h2>INVENTORY</h2>
+                    <div id="inventory-container" class="items-grid"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="auctions-tab">
+                <div class="auctions-section">
+                    <h2>MY AUCTIONS</h2>
+                    <div id="auctions-container" class="items-grid"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="info-tab">
+                <div class="info-section">
+                    <h2>CONNECTION INFO</h2>
+                    <div id="info-container"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="config-tab">
+                <div class="config-section">
+                    <h2>CONFIGURATION</h2>
+                    <div class="config-controls">
+                        <button id="save-config" class="action-btn">Save Config</button>
+                        <button id="reload-config" class="action-btn">Reload</button>
+                    </div>
+                    <div id="config-editor"></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="console-tab">
+                <div class="console-section">
+                    <h2>CONSOLE</h2>
+                    <div id="console" class="console"></div>
+                </div>
             </div>
         </div>
     </div>
