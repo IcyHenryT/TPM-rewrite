@@ -19,6 +19,7 @@ class WebServer {
         this.flipHistory = [];
         this.maxHistory = 1000;
         this.autoLoadedBots = new Set();
+        this.processedFlipsCount = {};
     }
 
     start() {

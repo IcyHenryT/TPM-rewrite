@@ -29,6 +29,7 @@ class AhBot {
         this.bank = null;
         this.sold = 0;
         this.bought = [];
+        this.boughtDetails = [];
         this.failed = 0;
         this.tpm = TPMSocket;
         this.start = Date.now();
@@ -94,7 +95,7 @@ class AhBot {
                     text: `TPM Rewrite`,
                     icon_url: 'https://media.discordapp.net/attachments/1303439738283495546/1304912521609871413/3c8b469c8faa328a9118bddddc6164a3.png?ex=67311dfd&is=672fcc7d&hm=8a14479f3801591c5a26dce82dd081bd3a0e5c8f90ed7e43d9140006ff0cb6ab&=&format=webp&quality=lossless&width=888&height=888',
                 }
-            }, bot.head, true)
+            }, this.bot.head, true)
             this.destroyBot(ign, true);
         })
 
@@ -201,8 +202,11 @@ class AhBot {
         this.sold++;
     }
 
-    updateBought(profit) {
+    updateBought(profit, details = null) {
         this.bought.push(profit);
+        if (details) {
+            this.boughtDetails.push(details);
+        }
     }
 
     updateFailed() {

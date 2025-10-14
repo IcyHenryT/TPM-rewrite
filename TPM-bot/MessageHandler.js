@@ -122,7 +122,12 @@ class MessageHandler {
                     let formattedProfit = formatNumber(profit);
                     let formattedPrice = formatNumber(priceNoCommas);
                     let formattedString = this.formatString(webhookFormat, item, formattedProfit, price, target, buyspeed, bed, finder, auctionID, formattedPrice, this.bot.username, vol, profitPerc);
-                    this.updateBought(profit);
+                    this.updateBought(profit, {
+                        itemName: item,
+                        finder: finder,
+                        price: parseInt(priceNoCommas, 10),
+                        tag: itemTag
+                    });
                     let thumbnail = this.bot.head;
                     if (useItemImage && itemTag) {
                         thumbnail = `https://sky.coflnet.com/static/icon/${itemTag}`;

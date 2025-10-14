@@ -101,6 +101,9 @@ async function destroyBot(ign, secondary = true) {
     ahBot.stop();
     delete askPrefixes[bots[ign].initAskPrefix(igns)?.toLowerCase()]
     delete bots[ign];
+    if (webServer.processedFlipsCount[ign]) {
+        delete webServer.processedFlipsCount[ign];
+    }
     if (secondary) {
         sendDiscord({
             title: 'Killed bot',
@@ -251,20 +254,29 @@ async function rotateStop(ign, bot, start) {
 function monitorFlips() {
     setInterval(() => {
         for (const [name, botInstance] of Object.entries(bots)) {
-            const lastProfit = botInstance.bought[botInstance.bought.length - 1];
-            if (lastProfit && typeof lastProfit === 'number' && lastProfit > 0) {
-                const { relist: relistObject } = botInstance.webhook.getObjects();
-                const lastFlip = Object.values(relistObject).pop();
-                if (lastFlip) {
-                    webServer.addFlip(
-                        name,
-                        lastFlip.itemName || 'Unknown',
-                        lastProfit,
-                        lastFlip.finder || 'Unknown',
-                        lastFlip.pricePaid || 0,
-                        lastFlip.tag || 'UNKNOWN'
-                    );
+            if (!webServer.processedFlipsCount[name]) {
+                webServer.processedFlipsCount[name] = 0;
+            }
+
+            const currentFlipsCount = botInstance.boughtDetails.length;
+
+            if (currentFlipsCount > webServer.processedFlipsCount[name]) {
+                for (let i = webServer.processedFlipsCount[name]; i < currentFlipsCount; i++) {
+                    const flipDetails = botInstance.boughtDetails[i];
+                    const profit = botInstance.bought[i];
+
+                    if (flipDetails && profit && typeof profit === 'number' && profit > 0) {
+                        webServer.addFlip(
+                            name,
+                            flipDetails.itemName || 'Unknown',
+                            profit,
+                            flipDetails.finder || 'Unknown',
+                            flipDetails.price || 0,
+                            flipDetails.tag || 'UNKNOWN'
+                        );
+                    }
                 }
+                webServer.processedFlipsCount[name] = currentFlipsCount;
             }
         }
     }, 5000);

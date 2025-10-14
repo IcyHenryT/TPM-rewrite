@@ -100,7 +100,6 @@ function connect() {
                     break;
                 case 'configUpdated':
                     loadConfig();
-                    showNotification('Config updated and applied successfully', 'success');
                     break;
             }
         } catch (e) {
