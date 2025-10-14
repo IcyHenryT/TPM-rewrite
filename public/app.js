@@ -98,6 +98,10 @@ function connect() {
                         }));
                     }
                     break;
+                case 'configUpdated':
+                    loadConfig();
+                    showNotification('Config updated and applied successfully', 'success');
+                    break;
             }
         } catch (e) {
             console.error('Error parsing message:', e);
@@ -117,6 +121,24 @@ function connect() {
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
     };
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
 }
 
 function formatNumber(num) {
@@ -386,11 +408,11 @@ function displayConfig(config) {
     let html = '<div class="config-group"><h3>Basic Settings</h3>';
     basicSettings.forEach(key => {
         if (config[key] !== undefined) {
-            const value = Array.isArray(config[key]) ? config[key].join(', ') : config[key];
+            const value = JSON.stringify(config[key]);
             html += `
                 <div class="config-item">
                     <div class="config-label">${key}</div>
-                    <input type="text" class="config-input" data-key="${key}" value="${value}">
+                    <input type="text" class="config-input" data-key="${key}" value='${value}'>
                 </div>
             `;
         }
@@ -400,12 +422,11 @@ function displayConfig(config) {
     html += '<div class="config-group"><h3>Relist Settings</h3>';
     relistSettings.forEach(key => {
         if (config[key] !== undefined) {
-            const value = Array.isArray(config[key]) ? config[key].join(', ') :
-                typeof config[key] === 'boolean' ? config[key] : config[key];
+            const value = JSON.stringify(config[key]);
             html += `
                 <div class="config-item">
                     <div class="config-label">${key}</div>
-                    <input type="text" class="config-input" data-key="${key}" value="${value}">
+                    <input type="text" class="config-input" data-key="${key}" value='${value}'>
                 </div>
             `;
         }
@@ -423,24 +444,30 @@ async function saveConfig() {
         const key = input.dataset.key;
         let value = input.value;
 
-        if (value.includes(',')) {
-            value = value.split(',').map(v => v.trim());
-        } else if (value === 'true' || value === 'false') {
-            value = value === 'true';
-        } else if (!isNaN(value) && value !== '') {
-            value = Number(value);
+        try {
+            newConfig[key] = JSON.parse(value);
+        } catch (e) {
+            newConfig[key] = value;
         }
-
-        newConfig[key] = value;
     });
 
-    await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newConfig)
-    });
+    try {
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newConfig)
+        });
 
-    alert('Config saved! Click "Restart Bot" to apply changes.');
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Config saved and applied', 'success');
+        } else {
+            showNotification('Error: ' + result.error, 'error');
+        }
+    } catch (e) {
+        showNotification('Failed to save config', 'error');
+    }
 }
 
 async function restartBot() {
@@ -454,7 +481,7 @@ async function restartBot() {
             headers: { 'Content-Type': 'application/json' }
         });
 
-        alert('TPM is restarting... The page will reload in 5 seconds.');
+        showNotification('TPM is restarting...', 'success');
 
         setTimeout(() => {
             window.location.reload();

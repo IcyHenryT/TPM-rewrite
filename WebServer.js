@@ -92,8 +92,14 @@ class WebServer {
                 try {
                     const newConfig = JSON.parse(body);
                     updateConfig(newConfig);
+
+                    this.broadcast({
+                        type: 'configUpdated',
+                        data: { message: 'Configuration updated successfully' }
+                    });
+
                     res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ success: true }));
+                    res.end(JSON.stringify({ success: true, message: 'Config updated and applied' }));
                 } catch (e) {
                     res.writeHead(500, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: e.message }));

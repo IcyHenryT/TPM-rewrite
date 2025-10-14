@@ -157,8 +157,18 @@ config.autoRotate = { ...parsedDefaultConfig.autoRotate, ...config.autoRotate };
 function updateConfig(data) {
     const newConfig = patch(defaultConfig, data);
     fs.writeFileSync('./config.json5', newConfig, 'utf-8');
-}
 
-updateConfig(config);
+    const reloadedConfig = JSON5.parse(fs.readFileSync('./config.json5', 'utf8'));
+
+    Object.keys(config).forEach(key => {
+        delete config[key];
+    });
+
+    Object.assign(config, reloadedConfig);
+
+    config.doNotRelist = { ...parsedDefaultConfig.doNotRelist, ...config.doNotRelist };
+    config.skip = { ...parsedDefaultConfig.skip, ...config.skip };
+    config.autoRotate = { ...parsedDefaultConfig.autoRotate, ...config.autoRotate };
+}
 
 module.exports = { config, updateConfig };

@@ -11,6 +11,37 @@ body {
     line-height: 1.6;
 }
 
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    background: #222;
+    border: 2px solid #333;
+    color: #fff;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    z-index: 10001;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.success {
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.notification.error {
+    border-color: #ff0000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
 .pin-screen {
     position: fixed;
     top: 0;
